@@ -212,6 +212,9 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     ))(input)
 }
 
+/**
+ *  Calculates the value of an math expression.
+ */
 pub fn math_expr_eval(e: Expr) -> Result<i32> {
     match e {
         Expr::Num(i) => Ok(i),
