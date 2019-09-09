@@ -111,6 +111,16 @@ pub enum Expr {
 }
 use Expr::Num;
 
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Expr::Num(i) =>  write!(f, "{}", i),
+            Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()), 
+        }
+
+    }
+}
+
 /**
  *  Parse a string to get the first i32 in the string.
  *   
@@ -173,4 +183,5 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
         parse_i32,
     ))(input)
 }
+
 
