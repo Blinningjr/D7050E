@@ -24,7 +24,8 @@ mod tests {
     #[allow(unused_imports)]
     use crate::parser::Expr::{
         Num,
-        BinOp
+        BinOp,
+        UnOp,
     };
 
     /**
@@ -53,7 +54,7 @@ mod tests {
      */
     #[test]
     fn test_parse_int() {
-        assert!(parse_expr("2") == Ok(("", Num(2))));
+        assert_eq!(parse_expr("2"), Ok(("", Num(2))));
         assert!(parse_expr("1a").is_ok());
     }
 
@@ -79,7 +80,9 @@ mod tests {
         let expr = parse_expr(test_val);
         
         assert_eq!(expr, expec);
-        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2)
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2);
+        assert_eq!(parse_expr(" -2"), Ok(("", UnOp(Sub, Box::new(Num(2))))));
+        assert_eq!(math_expr_eval(parse_expr(" -2").unwrap().1).unwrap(), -2);
     }
 
     /**

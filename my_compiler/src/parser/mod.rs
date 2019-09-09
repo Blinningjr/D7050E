@@ -95,7 +95,6 @@ impl fmt::Display for Op {
             Op::LessEqThen => write!(f, "{}", "<="),
             Op::LargEqThen => write!(f, "{}", ">="),
         }
-
     }
 }
 
@@ -133,6 +132,7 @@ impl FromStr for Op {
 pub enum Expr {
     Num(i32),
     BinOp(Box<Expr>, Op, Box<Expr>),
+    UnOp(Op, Box<Expr>),
 }
 use Expr::Num;
 
@@ -143,7 +143,8 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Expr::Num(i) =>  write!(f, "{}", i),
-            Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()), 
+            Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
+            Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
         }
 
     }
@@ -162,14 +163,14 @@ fn parse_i32(input: &str) -> IResult<&str, Expr> {
 }
 
 /**
- *  Parse a string to get the first operator in the string.
+ *  Parse a string to get the first binary operator in the string.
  * 
  *  :param input: A string.
  *
  *  :returns &str: The rest of the string that wansen't parsed.
  *  :returns Op: A operator that was in the beging of the string.
  */
-fn parse_operand(input: &str) -> IResult<&str, Op> {
+fn parse_binoperand(input: &str) -> IResult<&str, Op> {
     let result: IResult<&str, &str> = preceded(multispace0, alt((
         tag("+"),
         tag("-"),
@@ -197,6 +198,29 @@ fn parse_operand(input: &str) -> IResult<&str, Op> {
 }
 
 /**
+ *  Parse a string to get the first unary operator in the string.
+ * 
+ *  :param input: A string.
+ *
+ *  :returns &str: The rest of the string that wansen't parsed.
+ *  :returns Op: A operator that was in the beging of the string.
+ */
+fn parse_unoperand(input: &str) -> IResult<&str, Op> {
+    let result: IResult<&str, &str> = preceded(multispace0, alt((
+        tag("!"),
+        tag("-"),
+    )))(input);
+    if result.is_err() {
+       return Err(Error((input, Tag)));
+    }
+    let (i, t) = result.unwrap();
+    Ok((
+    i,
+    Op::from_str(t).unwrap(),
+    ))
+}
+
+/**
  *  Parse a string into a Box<Expr>.
  *
  *  :return IResult<&str, Box<Expr>>: A IResult with the rest of the string that coulden't be parsed
@@ -205,8 +229,12 @@ fn parse_operand(input: &str) -> IResult<&str, Op> {
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
         map(
-            tuple((parse_i32, parse_operand, parse_expr)),
+            tuple((parse_i32, parse_binoperand, parse_expr)),
             |(l, m, r)| Expr::BinOp(Box::new(l), m, Box::new(r)),
+        ),
+        map(
+            tuple((preceded(multispace0, parse_unoperand), parse_expr)),
+            |(l, r)| Expr::UnOp(l, Box::new(r)),
         ),
         parse_i32,
     ))(input)
@@ -227,6 +255,13 @@ pub fn math_expr_eval(e: Expr) -> Result<i32> {
                 Op::Div => Ok(left_value / right_value),
                 Op::Multi => Ok(left_value * right_value),
                 Op::Mod => Ok(left_value % right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+        Expr::UnOp(op, r) => {
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Op::Sub => Ok(-right_value),
                 _ => Err(SyntaxError),
             }
         }
