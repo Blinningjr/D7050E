@@ -26,6 +26,8 @@ mod tests {
         Num,
         BinOp,
         UnOp,
+        BoolOp,
+        Bool,
     };
 
     /**
@@ -203,5 +205,19 @@ mod tests {
     fn test_parse_larg_eq_then() {
         let expec = Ok(("", BinOp(Box::new(Num(4)), LargEqThen, Box::new(Num(2)))));
         assert_eq!(parse_expr("4 >= 2"), expec);
+    }
+
+    /**
+     *  Test parsing singel boolean.
+     */
+    #[test]
+    fn test_parse_bool() {
+        assert_eq!(parse_expr(" false"), Ok(("", Bool(false))));
+        assert_eq!(parse_expr("false"), Ok(("", Bool(false))));
+        assert_eq!(parse_expr(" true"), Ok(("", Bool(true))));
+        assert_eq!(parse_expr("true"), Ok(("", Bool(true))));
+        assert_eq!(parse_expr("true == false"), Ok(("", BinOp(Box::new(Bool(true)), Equal, Box::new(Bool(false))))));
+        assert_eq!(parse_expr(" true  2"), Ok(("  2", Bool(true))));
+        assert!(parse_expr(" true  2").is_ok());
     }
 }

@@ -133,6 +133,8 @@ pub enum Expr {
     Num(i32),
     BinOp(Box<Expr>, Op, Box<Expr>),
     UnOp(Op, Box<Expr>),
+    Bool(bool),
+    BoolOp(Box<Expr>, Op, Box<Expr>),
 }
 use Expr::Num;
 
@@ -145,6 +147,8 @@ impl fmt::Display for Expr {
             Expr::Num(i) =>  write!(f, "{}", i),
             Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
             Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
+            Expr::BoolOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
+            Expr::Bool(b) =>  write!(f, "{}", b),
         }
 
     }
@@ -160,6 +164,22 @@ impl fmt::Display for Expr {
  */
 fn parse_i32(input: &str) -> IResult<&str, Expr> {
     map(preceded(multispace0, digit1), |s: &str| Num(i32::from_str(s).unwrap()))(input)
+}
+
+fn parse_bool(input: &str) -> IResult<&str, Expr> {
+    let result: IResult<&str, &str> = preceded(multispace0, alt((
+        tag("false"),
+        tag("true"),
+    )))(input);
+    if result.is_err() {
+       return Err(Error((input, Tag)));
+    }
+    let (i, t) = result.unwrap();
+    match t {
+        "false" => Ok((i, Expr::Bool(false))),
+        "true" => Ok((i, Expr::Bool(true))),
+        _ => Err(Error((input, Tag))),
+    }
 }
 
 /**
@@ -180,7 +200,6 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
         tag("&&"),
         tag("||"),
         tag("!="),
-        tag("!"),
         tag("=="),
         tag("<="),
         tag(">="),
@@ -233,10 +252,15 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
             |(l, m, r)| Expr::BinOp(Box::new(l), m, Box::new(r)),
         ),
         map(
+            tuple((parse_bool, parse_binoperand, parse_expr)),
+            |(l, m, r)| Expr::BinOp(Box::new(l), m, Box::new(r)),
+        ),
+        map(
             tuple((preceded(multispace0, parse_unoperand), parse_expr)),
             |(l, r)| Expr::UnOp(l, Box::new(r)),
         ),
         parse_i32,
+        parse_bool,
     ))(input)
 }
 
@@ -265,5 +289,6 @@ pub fn math_expr_eval(e: Expr) -> Result<i32> {
                 _ => Err(SyntaxError),
             }
         }
+        _ => Err(SyntaxError),
     }
 }
