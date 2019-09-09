@@ -13,6 +13,12 @@ mod tests {
     use crate::parser::parse_expr;
 
     /**
+     *  Import parser function math_expr_eval.
+     */
+    #[allow(unused_imports)]
+    use crate::parser::math_expr_eval;
+
+    /**
      *  Import enum Expr.
      */
     #[allow(unused_imports)]
@@ -56,8 +62,11 @@ mod tests {
      */
     #[test]
     fn test_parse_add() {
+        let test_val = "4 + 2";
         let expec = Ok(("", BinOp(Box::new(Num(4)), Add, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 + 2"), expec);
+        let expr = parse_expr(test_val);
+        assert_eq!(expr, expec);
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6)
     }
 
     /**
@@ -65,8 +74,12 @@ mod tests {
      */
     #[test]
     fn test_parse_sub() {
+        let test_val = "4 - 2";
         let expec = Ok(("", BinOp(Box::new(Num(4)), Sub, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 - 2"), expec);
+        let expr = parse_expr(test_val);
+        
+        assert_eq!(expr, expec);
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2)
     }
 
     /**
@@ -74,8 +87,12 @@ mod tests {
      */
     #[test]
     fn test_parse_div() {
+        let test_val = "4 / 2";
         let expec = Ok(("", BinOp(Box::new(Num(4)), Div, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 / 2"), expec);
+        let expr = parse_expr(test_val);
+
+        assert_eq!(expr, expec);
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2)
     }
 
     /**
@@ -83,8 +100,12 @@ mod tests {
      */
     #[test]
     fn test_parse_multi() {
+        let test_val = "4 * 2";
         let expec = Ok(("", BinOp(Box::new(Num(4)), Multi, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 * 2"), expec);
+        let expr = parse_expr(test_val);
+
+        assert_eq!(expr, expec);
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 8)
     }
 
     /**
@@ -92,8 +113,12 @@ mod tests {
      */
     #[test]
     fn test_parse_mod() {
+        let test_val = "4 % 2";
         let expec = Ok(("", BinOp(Box::new(Num(4)), Mod, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 % 2"), expec);
+        let expr = parse_expr(test_val);
+
+        assert_eq!(expr, expec);
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 0)
     }
 
     /**

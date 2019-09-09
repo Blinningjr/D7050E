@@ -75,7 +75,32 @@ pub enum Op {
 }
 
 /**
- *  Converts string to Op for op.
+ *  to_string() for Op.
+ */
+impl fmt::Display for Op {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Op::Add => write!(f, "{}", "+"),
+            Op::Sub => write!(f, "{}", "-"),
+            Op::Div => write!(f, "{}", "/"),
+            Op::Multi => write!(f, "{}", "*"),
+            Op::Mod => write!(f, "{}", "%"),
+            Op::And => write!(f, "{}", "&&"),
+            Op::Or => write!(f, "{}", "||"),
+            Op::Not => write!(f, "{}", "!"),
+            Op::Equal => write!(f, "{}", "=="),
+            Op::NotEq => write!(f, "{}", "!="),
+            Op::LessThen => write!(f, "{}", "<"),
+            Op::LargThen => write!(f, "{}", ">"),
+            Op::LessEqThen => write!(f, "{}", "<="),
+            Op::LargEqThen => write!(f, "{}", ">="),
+        }
+
+    }
+}
+
+/**
+ *  Converts string to Op.
  */
 impl FromStr for Op {
     type Err = SyntaxError;
@@ -96,7 +121,7 @@ impl FromStr for Op {
             ">=" => Ok(Op::LargEqThen),
             "<" => Ok(Op::LessThen),
             ">" => Ok(Op::LargThen),
-             _ => Err(SyntaxError),
+            _ => Err(SyntaxError),
         }
     }
 }
@@ -111,6 +136,9 @@ pub enum Expr {
 }
 use Expr::Num;
 
+/**
+ * to_string() for expr.
+ */
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -184,4 +212,20 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     ))(input)
 }
 
-
+pub fn math_expr_eval(e: Expr) -> Result<i32> {
+    match e {
+        Expr::Num(i) => Ok(i),
+        Expr::BinOp(l, op, r) => {
+            let left_value = math_expr_eval(*l).unwrap();
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Op::Add => Ok(left_value + right_value),
+                Op::Sub => Ok(left_value - right_value),
+                Op::Div => Ok(left_value / right_value),
+                Op::Multi => Ok(left_value * right_value),
+                Op::Mod => Ok(left_value % right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+    }
+}
