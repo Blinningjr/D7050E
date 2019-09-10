@@ -126,7 +126,51 @@ impl FromStr for Op {
 }
 
 /** 
- *  A tree of Op and leafs of type i32.
+ *  Defining all of my types.
+ */
+#[derive(Debug, PartialEq)]
+pub enum MyType {
+    Int32(i32),
+    Bool(bool),
+    String(String),
+}
+
+/**
+ * to_string() for MyType.
+ */
+impl fmt::Display for MyType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MyType::Int32(i) =>  write!(f, "{}", i),
+            MyType::Bool(b) =>  write!(f, "{}", b),
+            MyType::String(s) =>  write!(f, "{}", s),
+        }
+
+    }
+}
+
+/** 
+ *  Defining variable.
+ */
+#[derive(Debug, PartialEq)]
+pub enum Variable {
+    Var(String, MyType, ),
+}
+
+/**
+ * to_string() for Variable.
+ */
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Variable::Var(s, myt) =>  write!(f, "{}: {}", s, myt),
+        }
+
+    }
+}
+
+/** 
+ *  Defining all types of expr.
  */
 #[derive(Debug, PartialEq)]
 pub enum Expr {
@@ -134,9 +178,11 @@ pub enum Expr {
     BinOp(Box<Expr>, Op, Box<Expr>),
     UnOp(Op, Box<Expr>),
     Bool(bool),
-    BoolOp(Box<Expr>, Op, Box<Expr>),
+    Param(Variable),
 }
 use Expr::Num;
+
+
 
 /**
  * to_string() for expr.
@@ -147,10 +193,9 @@ impl fmt::Display for Expr {
             Expr::Num(i) =>  write!(f, "{}", i),
             Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
             Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
-            Expr::BoolOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
             Expr::Bool(b) =>  write!(f, "{}", b),
+            Expr::Param(var) =>  write!(f, "{}", var),
         }
-
     }
 }
 

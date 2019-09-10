@@ -24,10 +24,9 @@ mod tests {
     #[allow(unused_imports)]
     use crate::parser::Expr::{
         Num,
+        Bool,
         BinOp,
         UnOp,
-        BoolOp,
-        Bool,
     };
 
     /**
