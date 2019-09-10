@@ -150,26 +150,6 @@ impl fmt::Display for MyType {
 }
 
 /** 
- *  Defining variable.
- */
-#[derive(Debug, PartialEq)]
-pub enum Variable {
-    Var(String, MyType, ),
-}
-
-/**
- * to_string() for Variable.
- */
-impl fmt::Display for Variable {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Variable::Var(s, myt) =>  write!(f, "{}: {}", s, myt),
-        }
-
-    }
-}
-
-/** 
  *  Defining all types of expr.
  */
 #[derive(Debug, PartialEq)]
@@ -178,7 +158,7 @@ pub enum Expr {
     BinOp(Box<Expr>, Op, Box<Expr>),
     UnOp(Op, Box<Expr>),
     Bool(bool),
-    Param(Variable),
+    Var(String, MyType),
 }
 use Expr::Num;
 
@@ -194,7 +174,7 @@ impl fmt::Display for Expr {
             Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
             Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
             Expr::Bool(b) =>  write!(f, "{}", b),
-            Expr::Param(var) =>  write!(f, "{}", var),
+            Expr::Var(s, myt) =>  write!(f, "{}: {}", s, myt),
         }
     }
 }
