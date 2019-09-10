@@ -27,6 +27,7 @@ mod tests {
         Bool,
         BinOp,
         UnOp,
+        Ident,
     };
 
     /**
@@ -47,7 +48,8 @@ mod tests {
         LessThen,   // "<"
         LargThen,   // ">"
         LessEqThen, // "<="
-        LargEqThen, // ">="  
+        LargEqThen, // ">="
+        Assign,     // "="
     };
 
     /**
@@ -218,5 +220,17 @@ mod tests {
         assert_eq!(parse_expr("true == false"), Ok(("", BinOp(Box::new(Bool(true)), Equal, Box::new(Bool(false))))));
         assert_eq!(parse_expr(" true  2"), Ok(("  2", Bool(true))));
         assert!(parse_expr(" true  2").is_ok());
+    }
+
+    /**
+     *  Test parsing let statments.
+     */
+    #[test]
+    fn test_parse_let() {
+        let expec = Ok(("", BinOp(Box::new(Ident("apa")), Assign, Box::new(Num(20)))));
+        
+        assert_eq!(parse_expr(" let apa = 20"), expec);
+        assert!(parse_expr("let apa=20+ asd").is_ok());
+        assert!(parse_expr(" letapa=20").is_err());
     }
 }

@@ -45,8 +45,7 @@ use nom::{
     branch::alt,
     IResult,
     combinator::map,
-    character::complete::digit1,
-    character::complete::multispace0,
+    character::complete::{ digit1, alpha1, multispace0, multispace1},
     sequence::{preceded, tuple},
     bytes::complete::tag,
     Err::Error,
@@ -72,6 +71,7 @@ pub enum Op {
     LargThen,   // ">"
     LessEqThen, // "<="
     LargEqThen, // ">="  
+    Assign,     // "="
 }
 
 /**
@@ -94,6 +94,7 @@ impl fmt::Display for Op {
             Op::LargThen => write!(f, "{}", ">"),
             Op::LessEqThen => write!(f, "{}", "<="),
             Op::LargEqThen => write!(f, "{}", ">="),
+            Op::Assign => write!(f, "{}", "="),
         }
     }
 }
@@ -120,45 +121,46 @@ impl FromStr for Op {
             ">=" => Ok(Op::LargEqThen),
             "<" => Ok(Op::LessThen),
             ">" => Ok(Op::LargThen),
+            "=" => Ok(Op::Assign),
             _ => Err(SyntaxError),
         }
     }
 }
 
-/** 
- *  Defining all of my types.
- */
-#[derive(Debug, PartialEq)]
-pub enum MyType {
-    Int32(i32),
-    Bool(bool),
-    String(String),
-}
+// /** 
+//  *  Defining all of my types.
+//  */
+// #[derive(Debug, PartialEq)]
+// pub enum MyType {
+//     Int32,
+//     Bool,
+//     Str,
+// }
 
-/**
- * to_string() for MyType.
- */
-impl fmt::Display for MyType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MyType::Int32(i) =>  write!(f, "{}", i),
-            MyType::Bool(b) =>  write!(f, "{}", b),
-            MyType::String(s) =>  write!(f, "{}", s),
-        }
+// /**
+//  * to_string() for MyType.
+//  */
+// impl fmt::Display for MyType {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         match self {
+//             MyType::Int32 =>  write!(f, "{}", "Int32"),
+//             MyType::Bool =>  write!(f, "{}", "Bool"),
+//             MyType::Str =>  write!(f, "{}", "Str"),
+//         }
 
-    }
-}
+//     }
+// }
 
 /** 
  *  Defining all types of expr.
  */
 #[derive(Debug, PartialEq)]
-pub enum Expr {
+pub enum Expr<'a> {
     Num(i32),
-    BinOp(Box<Expr>, Op, Box<Expr>),
-    UnOp(Op, Box<Expr>),
     Bool(bool),
-    Var(String, MyType),
+    Ident(&'a str),
+    BinOp(Box<Expr<'a>>, Op, Box<Expr<'a>>),
+    UnOp(Op, Box<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -167,14 +169,14 @@ use Expr::Num;
 /**
  * to_string() for expr.
  */
-impl fmt::Display for Expr {
+impl fmt::Display for Expr <'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Expr::Num(i) =>  write!(f, "{}", i),
             Expr::BinOp(l, op, r) => write!(f, "({} {:?} {})", l.to_string(), op,  r.to_string()),
             Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
             Expr::Bool(b) =>  write!(f, "{}", b),
-            Expr::Var(s, myt) =>  write!(f, "{}: {}", s, myt),
+            Expr::Ident(s) =>  write!(f, "{}", s),
         }
     }
 }
@@ -230,6 +232,7 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
         tag(">="),
         tag("<"),
         tag(">"),
+        tag("="),
     )))(input);
     if result.is_err() {
        return Err(Error((input, Tag)));
@@ -265,6 +268,20 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
 }
 
 /**
+ *  Parse a string into a Box<Expr::Var>.
+ *
+ *  :return IResult<&str, Box<Expr::var>>: A IResult with the rest of the string that coulden't be parsed
+ *  and a Box<Expr> with the parsed result.
+ */
+fn parse_let(input: &str) -> IResult<&str, Expr>{
+    map(
+        tuple((preceded(multispace0, tag("let")), preceded(multispace1, alpha1), 
+        preceded(multispace0, tag("=")), preceded(multispace0, parse_expr))),
+        |(_, i, _, r)| Expr::BinOp(Box::new(Expr::Ident(i)), Op::Assign, Box::new(r))
+    )(input)
+}
+
+/**
  *  Parse a string into a Box<Expr>.
  *
  *  :return IResult<&str, Box<Expr>>: A IResult with the rest of the string that coulden't be parsed
@@ -272,13 +289,18 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        parse_let,
         map(
             tuple((parse_i32, parse_binoperand, parse_expr)),
-            |(l, m, r)| Expr::BinOp(Box::new(l), m, Box::new(r)),
+            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
+        ),
+        map(
+            tuple((parse_i32, parse_binoperand, parse_expr)),
+            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
         ),
         map(
             tuple((parse_bool, parse_binoperand, parse_expr)),
-            |(l, m, r)| Expr::BinOp(Box::new(l), m, Box::new(r)),
+            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
         ),
         map(
             tuple((preceded(multispace0, parse_unoperand), parse_expr)),
