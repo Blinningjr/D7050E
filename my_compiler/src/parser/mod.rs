@@ -342,28 +342,15 @@ fn parse_mytype(input: &str) -> IResult<&str, MyType> {
  *  Parse a let expresion from string.
  */
 fn parse_let(input: &str) -> IResult<&str, Expr>{
-    alt((
-        map(
-            tuple((
-                preceded(multispace0, tag("let")), 
-                preceded(multispace1, parse_ident), 
-                parse_mytype,
-                preceded(multispace0, tag("=")), 
-                preceded(multispace0, parse_expr), 
-                preceded(multispace0, tag(";"))
-            )),
-                |(_, i, t, _, r, _)| Expr::Assign(Box::new(Expr::Assign(Box::new(i), Box::new(Expr::Type(t)))), Box::new(r))
-        ),
-        map(
-            tuple((
-                preceded(multispace0, tag("let")), 
-                parse_ident, 
-                preceded(multispace0, tag("=")), 
-                preceded(multispace0, parse_expr), 
-                preceded(multispace0, tag(";")))),
-                |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
-        ),
-    ))(input)
+    map(
+        tuple((
+            preceded(multispace0, tag("let")), 
+            parse_ident, 
+            preceded(multispace0, tag("=")), 
+            preceded(multispace0, parse_expr), 
+            preceded(multispace0, tag(";")))),
+            |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
+    )(input)
 }
 
 
