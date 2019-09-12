@@ -50,6 +50,7 @@ use nom::{
     bytes::complete::tag,
     Err::Error,
     error::ErrorKind::Tag,
+    combinator::map_res,
 };
 
 /**
@@ -194,19 +195,14 @@ fn parse_i32(input: &str) -> IResult<&str, Expr> {
 }
 
 fn parse_bool(input: &str) -> IResult<&str, Expr> {
-    let result: IResult<&str, &str> = preceded(multispace0, alt((
-        tag("false"),
-        tag("true"),
-    )))(input);
-    if result.is_err() {
-       return Err(Error((input, Tag)));
-    }
-    let (i, t) = result.unwrap();
-    match t {
-        "false" => Ok((i, Expr::Bool(false))),
-        "true" => Ok((i, Expr::Bool(true))),
-        _ => Err(Error((input, Tag))),
-    }
+    map(preceded(
+        multispace0, 
+        alt((
+            tag("false"),
+            tag("true"),
+        ))),
+        |v| Expr::Bool(bool::from_str(v).unwrap())
+    )(input)
 }
 
 /**
@@ -218,30 +214,26 @@ fn parse_bool(input: &str) -> IResult<&str, Expr> {
  *  :returns Op: A operator that was in the beging of the string.
  */
 fn parse_binoperand(input: &str) -> IResult<&str, Op> {
-    let result: IResult<&str, &str> = preceded(multispace0, alt((
-        tag("+"),
-        tag("-"),
-        tag("/"),
-        tag("*"),
-        tag("%"),
-        tag("&&"),
-        tag("||"),
-        tag("!="),
-        tag("=="),
-        tag("<="),
-        tag(">="),
-        tag("<"),
-        tag(">"),
-        tag("="),
-    )))(input);
-    if result.is_err() {
-       return Err(Error((input, Tag)));
-    }
-    let (i, t) = result.unwrap();
-    Ok((
-    i,
-    Op::from_str(t).unwrap(),
-    ))
+    map_res(preceded(
+        multispace0, 
+        alt((
+            tag("+"),
+            tag("-"),
+            tag("/"),
+            tag("*"),
+            tag("%"),
+            tag("&&"),
+            tag("||"),
+            tag("!="),
+            tag("=="),
+            tag("<="),
+            tag(">="),
+            tag("<"),
+            tag(">"),
+            tag("="),
+        ))),
+        |op| Op::from_str(op)
+    )(input)
 }
 
 /**
@@ -253,33 +245,22 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
  *  :returns Op: A operator that was in the beging of the string.
  */
 fn parse_unoperand(input: &str) -> IResult<&str, Op> {
-    let result: IResult<&str, &str> = preceded(multispace0, alt((
-        tag("!"),
-        tag("-"),
-    )))(input);
-    if result.is_err() {
-       return Err(Error((input, Tag)));
-    }
-    let (i, t) = result.unwrap();
-    Ok((
-    i,
-    Op::from_str(t).unwrap(),
-    ))
+    map_res(preceded(
+        multispace0, 
+        alt((
+            tag("!"),
+            tag("-"),
+        ))),
+        |op| Op::from_str(op)
+    )(input)
 }
 
 /** 
  *  Parse a ident from string.
 */
 fn parse_ident(input: &str) -> IResult<&str, Expr> {
-    let result: IResult<&str, &str> = preceded(multispace1, alpha1)(input);
-    if result.is_err() {
-       return Err(Error((input, Tag)));
-    }
-    let (l, r) = result.unwrap();
-    Ok((
-        l,
-        Expr::Ident(r),
-    ))
+    map(preceded(multispace1, alpha1),
+    |v| Expr::Ident(v))(input)
 }
 
 /**

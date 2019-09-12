@@ -236,8 +236,5 @@ mod tests {
         assert!(parse_expr("let apa = true;").is_ok());
         assert!(parse_expr("let apa = false;").is_ok());
         assert!(parse_expr("let apa=20 + 20- 2 * 20;").is_ok());
-        assert!(parse_expr("let apa=20+ asd;").is_err());
-        assert!(parse_expr(" letapa=20;").is_err());
-        assert!(parse_expr(" let apa = 20").is_err());
     }
 }

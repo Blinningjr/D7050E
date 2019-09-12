@@ -4,7 +4,7 @@ pub use crate::parser::parse_expr;
 pub use crate::parser::math_expr_eval;
 
 fn main() {
-    println!("{:?}", parse_expr(" 1 + 2 let apa = 20"));
+    println!("{:?}", parse_expr("let apa=20+ asd;"));
     let v = parse_expr("1 + 2 let apa = 20").unwrap();
     println!("{:?} : {:?}" , v.0, math_expr_eval(v.1));
 
