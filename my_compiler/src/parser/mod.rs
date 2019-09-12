@@ -55,13 +55,14 @@ use nom::{
     sequence::{preceded, tuple},
     bytes::complete::tag,
     combinator::map_res,
+    multi::fold_many0,
 };
 
 
 /**
  *  All binary operators.
  */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Op {
     Add,        // "+"
     Sub,        // "-"
@@ -136,7 +137,7 @@ impl FromStr for Op {
 /** 
  *  Defining all of my types.
  */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MyType {
     Int32,
     Bool,
@@ -179,7 +180,7 @@ impl fmt::Display for MyType {
 /** 
  *  Defining all types of expr.
  */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr<'a> {
     Empty,
     Num(i32),
@@ -209,7 +210,8 @@ impl fmt::Display for Expr <'_> {
             Expr::Type(s) =>  write!(f, ":{:?} =", s.to_string()),
             Expr::Assign(l, r) => write!(f, "({:?} {:?})", l.to_string(),  r.to_string()),
             Expr::Body(s) =>  write!(f, "{}", "Not implemented"),
-            Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), m.to_string()),
+            Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), r.to_string()),
+            Expr::Empty =>  write!(f, "{}", "Empty"),
         }
     }
 }
@@ -376,6 +378,7 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        parse_if,
         parse_let,
         map(
             tuple((
@@ -397,8 +400,22 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
 }
 
 
-fn parse_body(input: &str) -> IResult<&str, Vec<Expr>> {
-
+fn parse_body(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            preceded(multispace0, tag("{")), 
+            fold_many0(
+                parse_expr,
+                Vec::new(),
+                |mut acc: Vec<_>, item| {
+                    acc.push(item);
+                    acc
+                }
+            ),
+            preceded(multispace0, tag("}")),
+        )),
+        |(_, v, _)| Expr::Body(v)
+    )(input)
 }
 
 
@@ -412,7 +429,7 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
                 preceded(multispace0, tag("else")),
                 parse_body,
             )),
-            |(_, i,lb, _, rb)| Expr::If(Box::new(i), Box::new(Expr::Body(lb)), Box::new(Expr::Body(lb)))
+            |(_, i,lb, _, rb)| Expr::If(Box::new(i), Box::new(lb), Box::new(rb))
         ),
         map(
             tuple((
@@ -420,7 +437,7 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
                 parse_expr,
                 parse_body,
             )),
-            |(_, i, b)| Expr::If(Box::new(i), Box::new(Expr::Body(b)), Box::new(Expr::Empty))
+            |(_, i, b)| Expr::If(Box::new(i), Box::new(b), Box::new(Expr::Empty))
         ),
     ))(input)
 }
