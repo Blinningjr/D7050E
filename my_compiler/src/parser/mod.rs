@@ -408,28 +408,22 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
             tuple((
                 preceded(multispace0, tag("if")), 
                 parse_expr,
-                preceded(multispace0, tag("{")),
                 parse_body,
-                preceded(multispace0, tag("}")),
                 preceded(multispace0, tag("else")),
-                preceded(multispace0, tag("{")),
                 parse_body,
-                preceded(multispace0, tag("}")),
             )),
-            |(_, i, _, lb, _, _, _, rb, _)| Expr::If(Box::new(i), Box::new(Expr::Body(lb)), Box::new(Expr::Body(lb)))
+            |(_, i,lb, _, rb)| Expr::If(Box::new(i), Box::new(Expr::Body(lb)), Box::new(Expr::Body(lb)))
         ),
         map(
             tuple((
                 preceded(multispace0, tag("if")), 
                 parse_expr,
-                preceded(multispace0, tag("{")),
                 parse_body,
-                preceded(multispace0, tag("}")),
             )),
-            |(_, i, _, b, _)| Expr::If(Box::new(i), Box::new(Expr::Body(b)), Box::new(Expr::Empty))
+            |(_, i, b)| Expr::If(Box::new(i), Box::new(Expr::Body(b)), Box::new(Expr::Empty))
         ),
     ))(input)
-}(
+}
 
 
 /**
