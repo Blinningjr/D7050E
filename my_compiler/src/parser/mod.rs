@@ -48,8 +48,6 @@ use nom::{
     character::complete::{ digit1, alpha1, multispace0, multispace1},
     sequence::{preceded, tuple},
     bytes::complete::tag,
-    Err::Error,
-    error::ErrorKind::Tag,
     combinator::map_res,
 };
 
