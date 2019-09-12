@@ -150,8 +150,8 @@ mod tests {
      */
     #[test]
     fn test_parse_not() {
-        let expec = Ok(("", BinOp(Box::new(Num(4)), Not, Box::new(Num(2)))));
-        assert_eq!(parse_expr("4 ! 2"), expec);
+        let expec = Ok(("", UnOp( Not, Box::new(Num(2)))));
+        assert_eq!(parse_expr(" ! 2"), expec);
     }
 
     /**
