@@ -1,6 +1,8 @@
 mod test_parser;
 
+
 extern crate nom;
+
 
 /**
  *  std imports.
@@ -11,6 +13,7 @@ use std::{
     fmt,
 };
 
+
 /** 
  *  Needed for creating SyntaxError. 
  *  src: https://doc.rust-lang.org/std/str/trait.FromStr.html
@@ -18,6 +21,7 @@ use std::{
 type Result<T> = std::result::Result<T, SyntaxError>;
 #[derive(Debug, Clone)]
 pub struct SyntaxError;
+
 
 /** 
  * 
@@ -28,6 +32,7 @@ impl fmt::Display for SyntaxError {
     }
 }
 
+
 /** 
  *  This is important for other errors to wrap this one.
  */ 
@@ -37,6 +42,7 @@ impl error::Error for SyntaxError {
         None
     }
 }
+
 
 /**
  *  nom imports.
@@ -50,6 +56,7 @@ use nom::{
     bytes::complete::tag,
     combinator::map_res,
 };
+
 
 /**
  *  All binary operators.
@@ -70,8 +77,8 @@ pub enum Op {
     LargThen,   // ">"
     LessEqThen, // "<="
     LargEqThen, // ">="  
-    Assign,     // "="
 }
+
 
 /**
  *  to_string() for Op.
@@ -93,10 +100,10 @@ impl fmt::Display for Op {
             Op::LargThen => write!(f, "{}", ">"),
             Op::LessEqThen => write!(f, "{}", "<="),
             Op::LargEqThen => write!(f, "{}", ">="),
-            Op::Assign => write!(f, "{}", "="),
         }
     }
 }
+
 
 /**
  *  Converts string to Op.
@@ -120,35 +127,54 @@ impl FromStr for Op {
             ">=" => Ok(Op::LargEqThen),
             "<" => Ok(Op::LessThen),
             ">" => Ok(Op::LargThen),
-            "=" => Ok(Op::Assign),
             _ => Err(SyntaxError),
         }
     }
 }
 
-// /** 
-//  *  Defining all of my types.
-//  */
-// #[derive(Debug, PartialEq)]
-// pub enum MyType {
-//     Int32,
-//     Bool,
-//     Str,
-// }
 
-// /**
-//  * to_string() for MyType.
-//  */
-// impl fmt::Display for MyType {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             MyType::Int32 =>  write!(f, "{}", "Int32"),
-//             MyType::Bool =>  write!(f, "{}", "Bool"),
-//             MyType::Str =>  write!(f, "{}", "Str"),
-//         }
+/** 
+ *  Defining all of my types.
+ */
+#[derive(Debug, PartialEq)]
+pub enum MyType {
+    Int32,
+    Bool,
+    Str,
+}
 
-//     }
-// }
+
+/**
+ *  Converts string to MyType.
+ */
+impl FromStr for MyType {
+    type Err = SyntaxError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "i32" => Ok(MyType::Int32),
+            "bool" => Ok(MyType::Bool),
+            "Str" => Ok(MyType::Str),
+            _ => Err(SyntaxError),
+        }
+    }
+}
+
+
+/**
+ * to_string() for MyType.
+ */
+impl fmt::Display for MyType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MyType::Int32 =>  write!(f, "{}", "Int32"),
+            MyType::Bool =>  write!(f, "{}", "Bool"),
+            MyType::Str =>  write!(f, "{}", "Str"),
+        }
+
+    }
+}
+
 
 /** 
  *  Defining all types of expr.
@@ -158,11 +184,12 @@ pub enum Expr<'a> {
     Num(i32),
     Bool(bool),
     Ident(&'a str),
+    Type(MyType),
+    Assign(Box<Expr<'a>>, Box<Expr<'a>>),
     BinOp(Box<Expr<'a>>, Op, Box<Expr<'a>>),
     UnOp(Op, Box<Expr<'a>>),
 }
 use Expr::Num;
-
 
 
 /**
@@ -176,9 +203,12 @@ impl fmt::Display for Expr <'_> {
             Expr::UnOp(op, r) => write!(f, "({:?} {})", op,  r.to_string()),
             Expr::Bool(b) =>  write!(f, "{}", b),
             Expr::Ident(s) =>  write!(f, "{}", s),
+            Expr::Type(s) =>  write!(f, ":{:?} =", s.to_string()),
+            Expr::Assign(l, r) => write!(f, "({:?} {:?})", l.to_string(),  r.to_string()),
         }
     }
 }
+
 
 /**
  *  Parse a string to get the first i32 in the string.
@@ -192,6 +222,7 @@ fn parse_i32(input: &str) -> IResult<&str, Expr> {
     map(preceded(multispace0, digit1), |s: &str| Num(i32::from_str(s).unwrap()))(input)
 }
 
+
 fn parse_bool(input: &str) -> IResult<&str, Expr> {
     map(preceded(
         multispace0, 
@@ -202,6 +233,7 @@ fn parse_bool(input: &str) -> IResult<&str, Expr> {
         |v| Expr::Bool(bool::from_str(v).unwrap())
     )(input)
 }
+
 
 /**
  *  Parse a string to get the first binary operator in the string.
@@ -234,13 +266,9 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
     )(input)
 }
 
+
 /**
- *  Parse a string to get the first unary operator in the string.
- * 
- *  :param input: A string.
- *
- *  :returns &str: The rest of the string that wansen't parsed.
- *  :returns Op: A operator that was in the beging of the string.
+ *  Parse the unary operator from string.
  */
 fn parse_unoperand(input: &str) -> IResult<&str, Op> {
     map_res(preceded(
@@ -253,6 +281,7 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
     )(input)
 }
 
+
 /** 
  *  Parse a ident from string.
 */
@@ -260,6 +289,21 @@ fn parse_ident(input: &str) -> IResult<&str, Expr> {
     map(preceded(multispace1, alpha1),
     |v| Expr::Ident(v))(input)
 }
+
+
+fn parse_mytype(input: &str) -> IResult<&str, MyType> {
+    map_res(preceded(
+        multispace1, 
+        alt((
+            tag("i32"),
+            tag("bool"),
+            tag("str"),
+        ))
+    ),
+    |v| MyType::from_str(v) 
+    )(input)
+}
+
 
 /**
  *  Parse a string into a Box<Expr::Var>.
@@ -270,18 +314,28 @@ fn parse_ident(input: &str) -> IResult<&str, Expr> {
 fn parse_let(input: &str) -> IResult<&str, Expr>{
     alt((
         map(
-            tuple((preceded(multispace0, tag("let")), parse_ident, 
-            preceded(multispace0, tag("=")), preceded(multispace0, parse_expr), 
-            preceded(multispace0, tag(";")))),
-            |(_, i, _, r, _)| Expr::BinOp(Box::new(i), Op::Assign, Box::new(r))
+            tuple((
+                preceded(multispace0, tag("let")), 
+                parse_ident, 
+                tag(":"),
+                parse_mytype,
+                preceded(multispace0, tag("=")), 
+                preceded(multispace0, parse_expr), 
+                preceded(multispace0, tag(";")))),
+                |(_, i, _, t, _, r, _)| Expr::Assign(Box::new(Expr::Assign(Box::new(i), Box::new(Expr::Type(t)))), Box::new(r))
         ),
         map(
-            tuple(( parse_ident, preceded(multispace0, tag("=")), preceded(multispace0, parse_expr), 
-            preceded(multispace0, tag(";")))), 
-            |(i, _, r, _)| Expr::BinOp(Box::new(i), Op::Assign, Box::new(r))
+            tuple((
+                preceded(multispace0, tag("let")), 
+                parse_ident, 
+                preceded(multispace0, tag("=")), 
+                preceded(multispace0, parse_expr), 
+                preceded(multispace0, tag(";")))),
+                |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
         ),
     ))(input)
 }
+
 
 /**
  *  Parse singel expresions.
@@ -293,6 +347,7 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
         parse_ident,
     ))(input)
 }
+
 
 /**
  *  Parse a string into a Box<Expr>.
@@ -314,6 +369,7 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
         parse_singel_expr,
     ))(input)
 }
+
 
 /**
  *  Calculates the value of an math expression.

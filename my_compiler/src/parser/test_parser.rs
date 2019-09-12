@@ -3,20 +3,23 @@
  *
  *  Too run: 'cargo test'
  */
-
 #[cfg(test)]
-mod tests {    
+mod tests {
+
+
     /**
      *  Import parser function parse_expr.
      */
     #[allow(unused_imports)]
     use crate::parser::parse_expr;
 
+
     /**
      *  Import parser function math_expr_eval.
      */
     #[allow(unused_imports)]
     use crate::parser::math_expr_eval;
+
 
     /**
      *  Import enum Expr.
@@ -28,7 +31,10 @@ mod tests {
         BinOp,
         UnOp,
         Ident,
+        Type,
+        Assign,
     };
+
 
     /**
      *  Import enum Op.
@@ -49,8 +55,8 @@ mod tests {
         LargThen,   // ">"
         LessEqThen, // "<="
         LargEqThen, // ">="
-        Assign,     // "="
     };
+
 
     /**
      *  Test parsing singel int.
@@ -60,6 +66,7 @@ mod tests {
         assert_eq!(parse_expr("2"), Ok(("", Num(2))));
         assert!(parse_expr("1a").is_ok());
     }
+
 
     /**
      *  Test parsing addition.
@@ -72,6 +79,7 @@ mod tests {
         assert_eq!(expr, expec);
         assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6)
     }
+
 
     /**
      *  Test parsing subtraction.
@@ -88,6 +96,7 @@ mod tests {
         assert_eq!(math_expr_eval(parse_expr(" -2").unwrap().1).unwrap(), -2);
     }
 
+
     /**
      *  Test parsing divition.
      */
@@ -100,6 +109,7 @@ mod tests {
         assert_eq!(expr, expec);
         assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2)
     }
+
 
     /**
      *  Test parsing multiplication.
@@ -114,6 +124,7 @@ mod tests {
         assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 8)
     }
 
+
     /**
      *  Test parsing modulus.
      */
@@ -127,6 +138,7 @@ mod tests {
         assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 0)
     }
 
+
     /**
      *  Test parsing and.
      */
@@ -135,6 +147,7 @@ mod tests {
         let expec = Ok(("", BinOp(Box::new(Num(4)), And, Box::new(Num(2)))));
         assert_eq!(parse_expr("4 && 2"), expec);
     }
+
 
     /**
      *  Test parsing or.
@@ -145,6 +158,7 @@ mod tests {
         assert_eq!(parse_expr("4 || 2"), expec);
     }
 
+
     /**
      *  Test parsing not.
      */
@@ -153,6 +167,7 @@ mod tests {
         let expec = Ok(("", UnOp( Not, Box::new(Num(2)))));
         assert_eq!(parse_expr(" ! 2"), expec);
     }
+
 
     /**
      *  Test parsing equal.
@@ -163,6 +178,7 @@ mod tests {
         assert_eq!(parse_expr("4 == 2"), expec);
     }
 
+
     /**
      *  Test parsing not equal.
      */
@@ -171,6 +187,7 @@ mod tests {
         let expec = Ok(("", BinOp(Box::new(Num(4)), NotEq, Box::new(Num(2)))));
         assert_eq!(parse_expr("4 != 2"), expec);
     }
+
 
     /**
      *  Test parsing lesser then.
@@ -181,6 +198,7 @@ mod tests {
         assert_eq!(parse_expr("4 < 2"), expec);
     }
 
+
     /**
      *  Test parsing larger then.
      */
@@ -189,6 +207,7 @@ mod tests {
         let expec = Ok(("", BinOp(Box::new(Num(4)), LargThen, Box::new(Num(2)))));
         assert_eq!(parse_expr("4 > 2"), expec);
     }
+
 
     /**
      *  Test parsing lesser equal then.
@@ -199,6 +218,7 @@ mod tests {
         assert_eq!(parse_expr("4 <= 2"), expec);
     }
 
+
     /**
      *  Test parsing larger equal then.
      */
@@ -207,6 +227,7 @@ mod tests {
         let expec = Ok(("", BinOp(Box::new(Num(4)), LargEqThen, Box::new(Num(2)))));
         assert_eq!(parse_expr("4 >= 2"), expec);
     }
+
 
     /**
      *  Test parsing singel boolean.
@@ -222,12 +243,13 @@ mod tests {
         assert!(parse_expr(" true  2").is_ok());
     }
 
+
     /**
      *  Test parsing let statments.
      */
     #[test]
     fn test_parse_let() {
-        let expec = Ok(("", BinOp(Box::new(Ident("apa")), Assign, Box::new(Num(20)))));
+        let expec = Ok(("", Assign(Box::new(Ident("apa")), Box::new(Num(20)))));
         assert_eq!(parse_expr(" let apa = 20;"), expec);
 
         let expec = Ok((" let apa = 20;", BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))));
