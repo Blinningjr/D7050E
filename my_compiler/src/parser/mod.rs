@@ -267,6 +267,21 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
     ))
 }
 
+/** 
+ *  Parse a ident from string.
+*/
+fn parse_ident(input: &str) -> IResult<&str, Expr> {
+    let result: IResult<&str, &str> = preceded(multispace1, alpha1)(input);
+    if result.is_err() {
+       return Err(Error((input, Tag)));
+    }
+    let (l, r) = result.unwrap();
+    Ok((
+        l,
+        Expr::Ident(r),
+    ))
+}
+
 /**
  *  Parse a string into a Box<Expr::Var>.
  *
@@ -274,11 +289,30 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
  *  and a Box<Expr> with the parsed result.
  */
 fn parse_let(input: &str) -> IResult<&str, Expr>{
-    map(
-        tuple((preceded(multispace0, tag("let")), preceded(multispace1, alpha1), 
-        preceded(multispace0, tag("=")), preceded(multispace0, parse_expr))),
-        |(_, i, _, r)| Expr::BinOp(Box::new(Expr::Ident(i)), Op::Assign, Box::new(r))
-    )(input)
+    alt((
+        map(
+            tuple((preceded(multispace0, tag("let")), parse_ident, 
+            preceded(multispace0, tag("=")), preceded(multispace0, parse_expr), 
+            preceded(multispace0, tag(";")))),
+            |(_, i, _, r, _)| Expr::BinOp(Box::new(i), Op::Assign, Box::new(r))
+        ),
+        map(
+            tuple(( parse_ident, preceded(multispace0, tag("=")), preceded(multispace0, parse_expr), 
+            preceded(multispace0, tag(";")))), 
+            |(i, _, r, _)| Expr::BinOp(Box::new(i), Op::Assign, Box::new(r))
+        ),
+    ))(input)
+}
+
+/**
+ *  Parse singel expresions.
+ */
+fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
+    alt((
+        parse_i32,
+        parse_bool,
+        parse_ident,
+    ))(input)
 }
 
 /**
@@ -291,23 +325,14 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
         parse_let,
         map(
-            tuple((parse_i32, parse_binoperand, parse_expr)),
-            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
-        ),
-        map(
-            tuple((parse_i32, parse_binoperand, parse_expr)),
-            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
-        ),
-        map(
-            tuple((parse_bool, parse_binoperand, parse_expr)),
+            tuple((parse_singel_expr, parse_binoperand, parse_expr)),
             |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
         ),
         map(
             tuple((preceded(multispace0, parse_unoperand), parse_expr)),
             |(l, r)| Expr::UnOp(l, Box::new(r)),
         ),
-        parse_i32,
-        parse_bool,
+        parse_singel_expr,
     ))(input)
 }
 
