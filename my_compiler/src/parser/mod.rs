@@ -181,13 +181,16 @@ impl fmt::Display for MyType {
  */
 #[derive(Debug, PartialEq)]
 pub enum Expr<'a> {
+    Empty,
     Num(i32),
     Bool(bool),
     Ident(&'a str),
     Type(MyType),
     Assign(Box<Expr<'a>>, Box<Expr<'a>>),
-    BinOp(Box<Expr<'a>>, Op, Box<Expr<'a>>),
     UnOp(Op, Box<Expr<'a>>),
+    BinOp(Box<Expr<'a>>, Op, Box<Expr<'a>>),
+    Body(Vec<Expr<'a>>),
+    If(Box<Expr<'a>>, Box<Expr<'a>>,  Box<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -205,6 +208,8 @@ impl fmt::Display for Expr <'_> {
             Expr::Ident(s) =>  write!(f, "{}", s),
             Expr::Type(s) =>  write!(f, ":{:?} =", s.to_string()),
             Expr::Assign(l, r) => write!(f, "({:?} {:?})", l.to_string(),  r.to_string()),
+            Expr::Body(s) =>  write!(f, "{}", "Not implemented"),
+            Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), m.to_string()),
         }
     }
 }
@@ -219,17 +224,25 @@ impl fmt::Display for Expr <'_> {
  *  :returns i32: A i32 that was in the beging of the string.
  */
 fn parse_i32(input: &str) -> IResult<&str, Expr> {
-    map(preceded(multispace0, digit1), |s: &str| Num(i32::from_str(s).unwrap()))(input)
+    map(
+        preceded(
+            multispace0, 
+            digit1
+        ), 
+        |s: &str| Num(i32::from_str(s).unwrap())
+    )(input)
 }
 
 
 fn parse_bool(input: &str) -> IResult<&str, Expr> {
-    map(preceded(
-        multispace0, 
-        alt((
-            tag("false"),
-            tag("true"),
-        ))),
+    map(
+        preceded(
+            multispace0, 
+            alt((
+                tag("false"),
+                tag("true"),
+            ))
+        ),
         |v| Expr::Bool(bool::from_str(v).unwrap())
     )(input)
 }
@@ -244,24 +257,26 @@ fn parse_bool(input: &str) -> IResult<&str, Expr> {
  *  :returns Op: A operator that was in the beging of the string.
  */
 fn parse_binoperand(input: &str) -> IResult<&str, Op> {
-    map_res(preceded(
-        multispace0, 
-        alt((
-            tag("+"),
-            tag("-"),
-            tag("/"),
-            tag("*"),
-            tag("%"),
-            tag("&&"),
-            tag("||"),
-            tag("!="),
-            tag("=="),
-            tag("<="),
-            tag(">="),
-            tag("<"),
-            tag(">"),
-            tag("="),
-        ))),
+    map_res(
+        preceded(
+            multispace0, 
+            alt((
+                tag("+"),
+                tag("-"),
+                tag("/"),
+                tag("*"),
+                tag("%"),
+                tag("&&"),
+                tag("||"),
+                tag("!="),
+                tag("=="),
+                tag("<="),
+                tag(">="),
+                tag("<"),
+                tag(">"),
+                tag("="),
+            ))
+        ),
         |op| Op::from_str(op)
     )(input)
 }
@@ -271,12 +286,14 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
  *  Parse the unary operator from string.
  */
 fn parse_unoperand(input: &str) -> IResult<&str, Op> {
-    map_res(preceded(
-        multispace0, 
-        alt((
-            tag("!"),
-            tag("-"),
-        ))),
+    map_res(
+        preceded(
+            multispace0, 
+            alt((
+                tag("!"),
+                tag("-"),
+            ))
+        ),
         |op| Op::from_str(op)
     )(input)
 }
@@ -286,8 +303,10 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
  *  Parse a ident from string.
 */
 fn parse_ident(input: &str) -> IResult<&str, Expr> {
-    map(preceded(multispace1, alpha1),
-    |v| Expr::Ident(v))(input)
+    map(
+        preceded(multispace1, alpha1),
+        |v| Expr::Ident(v)
+    )(input)
 }
 
 
@@ -359,16 +378,58 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
         parse_let,
         map(
-            tuple((parse_singel_expr, parse_binoperand, parse_expr)),
+            tuple((
+                parse_singel_expr, 
+                parse_binoperand, 
+                parse_expr
+            )),
             |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
         ),
         map(
-            tuple((preceded(multispace0, parse_unoperand), parse_expr)),
+            tuple((
+                preceded(multispace0, parse_unoperand), 
+                parse_expr
+            )),
             |(l, r)| Expr::UnOp(l, Box::new(r)),
         ),
         parse_singel_expr,
     ))(input)
 }
+
+
+fn parse_body(input: &str) -> IResult<&str, Vec<Expr>> {
+
+}
+
+
+fn parse_if(input: &str) -> IResult<&str, Expr> {
+    alt((
+        map(
+            tuple((
+                preceded(multispace0, tag("if")), 
+                parse_expr,
+                preceded(multispace0, tag("{")),
+                parse_body,
+                preceded(multispace0, tag("}")),
+                preceded(multispace0, tag("else")),
+                preceded(multispace0, tag("{")),
+                parse_body,
+                preceded(multispace0, tag("}")),
+            )),
+            |(_, i, _, lb, _, _, _, rb, _)| Expr::If(Box::new(i), Box::new(Expr::Body(lb)), Box::new(Expr::Body(lb)))
+        ),
+        map(
+            tuple((
+                preceded(multispace0, tag("if")), 
+                parse_expr,
+                preceded(multispace0, tag("{")),
+                parse_body,
+                preceded(multispace0, tag("}")),
+            )),
+            |(_, i, _, b, _)| Expr::If(Box::new(i), Box::new(Expr::Body(b)), Box::new(Expr::Empty))
+        ),
+    ))(input)
+}(
 
 
 /**
