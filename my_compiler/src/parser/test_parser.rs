@@ -37,6 +37,7 @@ mod tests {
         If,
         Body,
         While,
+        Func,
     };
 
 
@@ -59,6 +60,19 @@ mod tests {
         LargThen,   // ">"
         LessEqThen, // "<="
         LargEqThen, // ">="
+    };
+
+
+
+    /**
+     *  Import enum MyType.
+     */
+    #[allow(unused_imports)]
+    use crate::parser::MyType::{
+        Int32,
+        Boolean,
+        Str,
+        None,
     };
 
 
@@ -290,5 +304,16 @@ mod tests {
         let expec = Ok(("", While(Box::new(Bool(true)), 
             Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
         assert_eq!(parse_expr("while true {1+2}"), expec);
+    }
+
+
+    /**
+     *  Test parsing Func statments.
+     */
+    #[test]
+    fn test_parse_func() {
+        let expec = Ok(("", Func(Box::new(Ident("apa")), Box::new(Ident("input")), 
+            Boolean, Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))));
+        assert_eq!(parse_expr("fn apa(input) -> bool { let apa = 10;}"), expec);
     }
 }

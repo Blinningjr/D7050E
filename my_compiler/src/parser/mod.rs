@@ -140,8 +140,9 @@ impl FromStr for Op {
 #[derive(Debug, PartialEq, Clone)]
 pub enum MyType {
     Int32,
-    Bool,
+    Boolean,
     Str,
+    None,
 }
 
 
@@ -154,7 +155,7 @@ impl FromStr for MyType {
     fn from_str(s: &str) -> Result<Self> {
         match s {
             "i32" => Ok(MyType::Int32),
-            "bool" => Ok(MyType::Bool),
+            "bool" => Ok(MyType::Boolean),
             "Str" => Ok(MyType::Str),
             _ => Err(SyntaxError),
         }
@@ -169,8 +170,9 @@ impl fmt::Display for MyType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             MyType::Int32 =>  write!(f, "{}", "Int32"),
-            MyType::Bool =>  write!(f, "{}", "Bool"),
+            MyType::Boolean =>  write!(f, "{}", "Boolean"),
             MyType::Str =>  write!(f, "{}", "Str"),
+            MyType::None =>  write!(f, "{}", "None"),
         }
 
     }
@@ -193,6 +195,7 @@ pub enum Expr<'a> {
     Body(Vec<Expr<'a>>),
     If(Box<Expr<'a>>, Box<Expr<'a>>,  Box<Expr<'a>>),
     While(Box<Expr<'a>>, Box<Expr<'a>>),
+    Func(Box<Expr<'a>>, Box<Expr<'a>>, MyType, Box<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -214,6 +217,7 @@ impl fmt::Display for Expr <'_> {
             Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), r.to_string()),
             Expr::Empty =>  write!(f, "{}", "Empty"),
             Expr::While(l, r) =>  write!(f, "while {} ({})", l.to_string(), r.to_string()),
+            Expr::Func(i, e, t, r) =>  write!(f, "fn {}({}) -> {} ({})", i.to_string(), e.to_string(), t.to_string(), r.to_string()),
         }
     }
 }
@@ -301,7 +305,7 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
  */
 fn parse_ident(input: &str) -> IResult<&str, Expr> {
     map(
-        preceded(multispace1, alpha1),
+        preceded(multispace0, alpha1),
         |v| Expr::Ident(v)
     )(input)
 }
@@ -332,7 +336,7 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
         map(
             tuple((
                 preceded(multispace0, tag("let")), 
-                parse_ident, 
+                preceded(multispace1, parse_ident), 
                 tag(":"),
                 parse_mytype,
                 preceded(multispace0, tag("=")), 
@@ -370,6 +374,7 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        parse_func,
         parse_while,
         parse_if,
         parse_let,
@@ -453,6 +458,26 @@ fn parse_while(input: &str) -> IResult<&str, Expr> {
             parse_body,
         )),
         |(_, i, b)| Expr::While(Box::new(i), Box::new(b))
+    )(input)
+}
+
+
+/**
+ *  Parse a Func expresion from string.
+ */
+fn parse_func(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            preceded(multispace0, tag("fn")),
+            parse_ident, 
+            tag("("),
+            parse_expr, 
+            preceded(multispace0, tag(")")), 
+            preceded(multispace0, tag("->")),
+            parse_mytype,
+            parse_body,
+        )),
+        |(_, i, _, e, _, _, t, b)| Expr::Func(Box::new(i), Box::new(e), t, Box::new(b))
     )(input)
 }
 
