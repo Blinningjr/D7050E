@@ -304,10 +304,20 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
  *  Parse a Ident expresion from string.
  */
 fn parse_ident(input: &str) -> IResult<&str, Expr> {
-    map(
-        preceded(multispace0, alpha1),
-        |v| Expr::Ident(v)
-    )(input)
+    alt((
+        map(
+            tuple((
+                preceded(multispace0, alpha1),
+                tag(":"),
+                parse_mytype,
+            )),
+            |(i, _, t)| Expr::Assign(Box::new(Expr::Ident(i)), Box::new(Expr::Type(t)))
+        ),
+        map(
+            preceded(multispace0, alpha1),
+            |v| Expr::Ident(v)
+        ),
+    ))(input)
 }
 
 
@@ -337,12 +347,12 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
             tuple((
                 preceded(multispace0, tag("let")), 
                 preceded(multispace1, parse_ident), 
-                tag(":"),
                 parse_mytype,
                 preceded(multispace0, tag("=")), 
                 preceded(multispace0, parse_expr), 
-                preceded(multispace0, tag(";")))),
-                |(_, i, _, t, _, r, _)| Expr::Assign(Box::new(Expr::Assign(Box::new(i), Box::new(Expr::Type(t)))), Box::new(r))
+                preceded(multispace0, tag(";"))
+            )),
+                |(_, i, t, _, r, _)| Expr::Assign(Box::new(Expr::Assign(Box::new(i), Box::new(Expr::Type(t)))), Box::new(r))
         ),
         map(
             tuple((

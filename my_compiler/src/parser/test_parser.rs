@@ -63,7 +63,6 @@ mod tests {
     };
 
 
-
     /**
      *  Import enum MyType.
      */
@@ -315,5 +314,10 @@ mod tests {
         let expec = Ok(("", Func(Box::new(Ident("apa")), Box::new(Ident("input")), 
             Boolean, Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))));
         assert_eq!(parse_expr("fn apa(input) -> bool { let apa = 10;}"), expec);
+
+        let expec = Ok(("", Func(Box::new(Ident("apa")), 
+            Box::new(Assign(Box::new(Ident("input")), Box::new(Type(Int32)))), 
+            Boolean, Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))));
+        assert_eq!(parse_expr("fn apa(input: i32) -> bool { let apa = 10;}"), expec);
     }
 }
