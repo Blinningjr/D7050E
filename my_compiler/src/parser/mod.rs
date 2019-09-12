@@ -192,6 +192,7 @@ pub enum Expr<'a> {
     BinOp(Box<Expr<'a>>, Op, Box<Expr<'a>>),
     Body(Vec<Expr<'a>>),
     If(Box<Expr<'a>>, Box<Expr<'a>>,  Box<Expr<'a>>),
+    While(Box<Expr<'a>>, Box<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -212,18 +213,14 @@ impl fmt::Display for Expr <'_> {
             Expr::Body(s) =>  write!(f, "{}", "Not implemented"),
             Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), r.to_string()),
             Expr::Empty =>  write!(f, "{}", "Empty"),
+            Expr::While(l, r) =>  write!(f, "while {} ({})", l.to_string(), r.to_string()),
         }
     }
 }
 
 
 /**
- *  Parse a string to get the first i32 in the string.
- *   
- *  :param input: A string.
- *
- *  :returns &str: The rest of the string that wansen't parsed.
- *  :returns i32: A i32 that was in the beging of the string.
+ *  Parse a I32 expresion from string.
  */
 fn parse_i32(input: &str) -> IResult<&str, Expr> {
     map(
@@ -236,6 +233,9 @@ fn parse_i32(input: &str) -> IResult<&str, Expr> {
 }
 
 
+/**
+ *  Parse a Bool expresion from string.
+ */
 fn parse_bool(input: &str) -> IResult<&str, Expr> {
     map(
         preceded(
@@ -251,12 +251,7 @@ fn parse_bool(input: &str) -> IResult<&str, Expr> {
 
 
 /**
- *  Parse a string to get the first binary operator in the string.
- * 
- *  :param input: A string.
- *
- *  :returns &str: The rest of the string that wansen't parsed.
- *  :returns Op: A operator that was in the beging of the string.
+ *  Parse a Binary operand from string.
  */
 fn parse_binoperand(input: &str) -> IResult<&str, Op> {
     map_res(
@@ -301,9 +296,9 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
 }
 
 
-/** 
- *  Parse a ident from string.
-*/
+/**
+ *  Parse a Ident expresion from string.
+ */
 fn parse_ident(input: &str) -> IResult<&str, Expr> {
     map(
         preceded(multispace1, alpha1),
@@ -312,6 +307,9 @@ fn parse_ident(input: &str) -> IResult<&str, Expr> {
 }
 
 
+/**
+ *  Parse a MyType expresion from string.
+ */
 fn parse_mytype(input: &str) -> IResult<&str, MyType> {
     map_res(preceded(
         multispace1, 
@@ -327,10 +325,7 @@ fn parse_mytype(input: &str) -> IResult<&str, MyType> {
 
 
 /**
- *  Parse a string into a Box<Expr::Var>.
- *
- *  :return IResult<&str, Box<Expr::var>>: A IResult with the rest of the string that coulden't be parsed
- *  and a Box<Expr> with the parsed result.
+ *  Parse a let expresion from string.
  */
 fn parse_let(input: &str) -> IResult<&str, Expr>{
     alt((
@@ -359,7 +354,7 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
 
 
 /**
- *  Parse singel expresions.
+ *  Parse singel expresions from string.
  */
 fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
     alt((
@@ -372,12 +367,10 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
 
 /**
  *  Parse a string into a Box<Expr>.
- *
- *  :return IResult<&str, Box<Expr>>: A IResult with the rest of the string that coulden't be parsed
- *  and a Box<Expr> with the parsed result.
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        parse_while,
         parse_if,
         parse_let,
         map(
@@ -400,6 +393,9 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
 }
 
 
+/**
+ *  Parse a Body expresion from string.
+ */
 fn parse_body(input: &str) -> IResult<&str, Expr> {
     map(
         tuple((
@@ -419,6 +415,9 @@ fn parse_body(input: &str) -> IResult<&str, Expr> {
 }
 
 
+/**
+ *  Parse a If expresion from string.
+ */
 fn parse_if(input: &str) -> IResult<&str, Expr> {
     alt((
         map(
@@ -440,6 +439,21 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
             |(_, i, b)| Expr::If(Box::new(i), Box::new(b), Box::new(Expr::Empty))
         ),
     ))(input)
+}
+
+
+/**
+ *  Parse a While expresion from string.
+ */
+fn parse_while(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            preceded(multispace0, tag("while")), 
+            parse_expr,
+            parse_body,
+        )),
+        |(_, i, b)| Expr::While(Box::new(i), Box::new(b))
+    )(input)
 }
 
 

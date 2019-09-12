@@ -36,6 +36,7 @@ mod tests {
         Empty,
         If,
         Body,
+        While,
     };
 
 
@@ -263,15 +264,31 @@ mod tests {
         assert!(parse_expr("let apa=20 + 20- 2 * 20;").is_ok());
     }
 
+
     /**
      *  Test parsing if statments.
      */
     #[test]
     fn test_parse_if() {
-        let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), Box::new(Empty))));
+        let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), 
+        Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), 
+        Box::new(Empty))));
         assert_eq!(parse_expr("if false == true {1+2}"), expec);
 
-        let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
+        let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), 
+            Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), 
+            Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
         assert_eq!(parse_expr("if false == true {1+2} else {1+2}"), expec);
+    }
+
+
+    /**
+     *  Test parsing while statments.
+     */
+    #[test]
+    fn test_parse_while() {
+        let expec = Ok(("", While(Box::new(Bool(true)), 
+            Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
+        assert_eq!(parse_expr("while true {1+2}"), expec);
     }
 }
