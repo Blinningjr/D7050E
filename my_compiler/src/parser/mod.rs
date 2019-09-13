@@ -359,6 +359,14 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
  */
 fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        map(
+            tuple((
+                preceded(multispace0, tag("(")),
+                parse_expr,
+                preceded(multispace0, tag(")")),
+            )),
+            |(_, e, _)| e
+        ),
         parse_i32,
         parse_bool,
         parse_ident,

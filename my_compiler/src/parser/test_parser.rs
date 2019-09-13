@@ -94,7 +94,8 @@ mod tests {
         let expec = Ok(("", BinOp(Box::new(Num(4)), Add, Box::new(Num(2)))));
         let expr = parse_expr(test_val);
         assert_eq!(expr, expec);
-        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6)
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6);
+        assert_eq!(math_expr_eval(parse_expr(" 10 * (2+3)").unwrap().1).unwrap(), 50);
     }
 
 
@@ -111,6 +112,7 @@ mod tests {
         assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2);
         assert_eq!(parse_expr(" -2"), Ok(("", UnOp(Sub, Box::new(Num(2))))));
         assert_eq!(math_expr_eval(parse_expr(" -2").unwrap().1).unwrap(), -2);
+        assert_eq!(math_expr_eval(parse_expr(" 10 / (2-4)").unwrap().1).unwrap(), -5);
     }
 
 
@@ -124,7 +126,8 @@ mod tests {
         let expr = parse_expr(test_val);
 
         assert_eq!(expr, expec);
-        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2)
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2);
+        assert_eq!(math_expr_eval(parse_expr(" 10 / (2-4)").unwrap().1).unwrap(), -5);
     }
 
 
@@ -138,7 +141,8 @@ mod tests {
         let expr = parse_expr(test_val);
 
         assert_eq!(expr, expec);
-        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 8)
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 8);
+        assert_eq!(math_expr_eval(parse_expr(" 10 * (2+3)").unwrap().1).unwrap(), 50);
     }
 
 
@@ -152,7 +156,7 @@ mod tests {
         let expr = parse_expr(test_val);
 
         assert_eq!(expr, expec);
-        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 0)
+        assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 0);
     }
 
 
