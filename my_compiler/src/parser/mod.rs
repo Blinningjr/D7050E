@@ -1,6 +1,3 @@
-mod test_parser;
-
-
 extern crate nom;
 
 
@@ -157,6 +154,7 @@ impl FromStr for MyType {
             "i32" => Ok(MyType::Int32),
             "bool" => Ok(MyType::Boolean),
             "Str" => Ok(MyType::Str),
+            "None" => Ok(MyType::None),
             _ => Err(SyntaxError),
         }
     }
@@ -331,6 +329,7 @@ fn parse_mytype(input: &str) -> IResult<&str, MyType> {
             tag("i32"),
             tag("bool"),
             tag("str"),
+            tag("None"),
         ))
     ),
     |v| MyType::from_str(v) 

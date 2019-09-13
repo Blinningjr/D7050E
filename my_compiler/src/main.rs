@@ -1,4 +1,7 @@
+#[path = "parser/mod.rs"]
 mod parser;
+#[path = "interpreter/mod.rs"]
+mod interpreter;
 
 
 pub use crate::parser::parse_expr;
