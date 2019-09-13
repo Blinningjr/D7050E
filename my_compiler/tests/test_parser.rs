@@ -89,11 +89,14 @@ fn test_parse_int() {
  */
 #[test]
 fn test_parse_add() {
-    let test_val = "4 + 2";
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Add, Box::new(Num(2)))));
-    let expr = parse_expr(test_val);
+    let mut expec = Ok(("", BinOp(Box::new(Num(4)), Add, Box::new(Num(2)))));
+    let mut expr = parse_expr("4 + 2");
     assert_eq!(expr, expec);
     assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6);
+
+    expec = Ok(("", BinOp(Box::new(Ident("a")), Add, Box::new(Ident("b")))));
+    expr = parse_expr(" a + b");
+    assert_eq!(expr, expec);
 }
 
 
