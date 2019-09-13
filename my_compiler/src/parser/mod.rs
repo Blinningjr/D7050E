@@ -213,7 +213,7 @@ impl fmt::Display for Expr <'_> {
             Expr::Ident(s) =>  write!(f, "{}", s),
             Expr::Type(s) =>  write!(f, ":{:?} =", s.to_string()),
             Expr::Assign(l, r) => write!(f, "({:?} {:?})", l.to_string(),  r.to_string()),
-            Expr::Body(s) =>  write!(f, "{}", "Not implemented"),
+            Expr::Body(s) =>  write!(f, "{:?}", s),
             Expr::If(l, m, r) =>  write!(f, "if {} ({}) else ({})", l.to_string(), m.to_string(), r.to_string()),
             Expr::Empty =>  write!(f, "{}", "Empty"),
             Expr::While(l, r) =>  write!(f, "while {} ({})", l.to_string(), r.to_string()),
