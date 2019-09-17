@@ -21,6 +21,13 @@ use crate::parser::math_expr_eval;
 
 
 /**
+ *  Import parser function parse_funcs.
+ */
+#[allow(unused_imports)]
+use crate::parser::parse_funcs;
+
+
+/**
  *  Import enum Expr.
  */
 #[allow(unused_imports)]
@@ -38,6 +45,7 @@ use crate::parser::Expr::{
     While,
     Func,
     Param,
+    Funcs,
 };
 
 
@@ -315,26 +323,27 @@ fn test_parse_while() {
 #[test]
 fn test_parse_func() {
     let expec = Ok(("", 
-        Func(Box::new(Ident("apa")), 
+        Funcs([Func(Box::new(Ident("apa")), 
         Box::new(Param([Ident("input")].to_vec())), 
         Boolean, 
         Box::new(Body([Assign(Box::new(Ident("apa")), 
-        Box::new(Num(10)))].to_vec())))));
-    assert_eq!(parse_expr("fn apa(input) -> bool { let apa = 10;}"), expec);
+        Box::new(Num(10)))].to_vec())))].to_vec())));
+    assert_eq!(parse_funcs("fn apa(input) -> bool { let apa = 10;}"), expec);
 
-    let expec = Ok(("", Func(Box::new(Ident("apa")), 
+    let expec = Ok(("", 
+        Funcs([Func(Box::new(Ident("apa")), 
         Box::new(Param([Assign(Box::new(Ident("input")), Box::new(Type(Int32)))].to_vec())), 
         None, 
         Box::new(Body([Assign(Box::new(Ident("a")), Box::new(Num(10))), 
-            Assign(Box::new(Ident("var")), Box::new(Bool(true)))].to_vec())))));
-    assert_eq!(parse_expr("fn apa(input: i32) -> None { let a = 10; let var = true;}"), expec);
+            Assign(Box::new(Ident("var")), Box::new(Bool(true)))].to_vec())))].to_vec())));
+    assert_eq!(parse_funcs("fn apa(input: i32) -> None { let a = 10; let var = true;}"), expec);
 
     let expec = Ok(("", 
-        Func(Box::new(Ident("apor")), 
+        Funcs([Func(Box::new(Ident("apor")), 
         Box::new(Param([Assign(Box::new(Ident("input")), Box::new(Type(Str))), Ident("test")].to_vec())), 
         Boolean, 
-        Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))));
-    assert_eq!(parse_expr("fn apor(input: Str, test) -> bool { let apa = 10;}"), expec);
+        Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))].to_vec())));
+    assert_eq!(parse_funcs("fn apor(input: Str, test) -> bool { let apa = 10;}"), expec);
 }
 
 

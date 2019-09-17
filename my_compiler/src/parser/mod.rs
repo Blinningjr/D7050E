@@ -196,6 +196,7 @@ pub enum Expr<'a> {
     While(Box<Expr<'a>>, Box<Expr<'a>>),
     Func(Box<Expr<'a>>, Box<Expr<'a>>, MyType, Box<Expr<'a>>),
     Param(Vec<Expr<'a>>),
+    Funcs(Vec<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -219,6 +220,7 @@ impl fmt::Display for Expr <'_> {
             Expr::While(l, r) =>  write!(f, "while {} ({})", l.to_string(), r.to_string()),
             Expr::Func(i, e, t, r) =>  write!(f, "fn {}({}) -> {} ({})", i.to_string(), e.to_string(), t.to_string(), r.to_string()),
             Expr::Param(s) =>  write!(f, "{:?}", s),
+            Expr::Funcs(s) =>  write!(f, "{:?}", s),
         }
     }
 }
@@ -381,7 +383,6 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
-        parse_func,
         parse_while,
         parse_if,
         parse_let,
@@ -487,6 +488,9 @@ fn parse_func(input: &str) -> IResult<&str, Expr> {
 }
 
 
+/**
+ *  Parse a Parameter expresion from string.
+ */
 fn parse_param(input: &str) -> IResult<&str, Expr> {
     map(
         tuple((
@@ -495,6 +499,25 @@ fn parse_param(input: &str) -> IResult<&str, Expr> {
             preceded(multispace0, tag(")")), 
         )),
         |(_, v, _)| Expr::Param(v)
+    )(input)
+}
+
+
+/**
+ *  Parse a Functions into expresions from string.
+ */
+pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
+    map(
+        preceded(multispace0,  
+            fold_many0(
+                parse_func,
+                Vec::new(),
+                |mut acc: Vec<_>, item| {
+                    acc.push(item);
+                    acc
+                }
+            )),
+        |v| Expr::Funcs(v)
     )(input)
 }
 
