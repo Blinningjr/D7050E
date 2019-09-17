@@ -53,6 +53,7 @@ use nom::{
     bytes::complete::tag,
     combinator::map_res,
     multi::fold_many0,
+    multi::separated_list,
 };
 
 
@@ -194,6 +195,7 @@ pub enum Expr<'a> {
     If(Box<Expr<'a>>, Box<Expr<'a>>,  Box<Expr<'a>>),
     While(Box<Expr<'a>>, Box<Expr<'a>>),
     Func(Box<Expr<'a>>, Box<Expr<'a>>, MyType, Box<Expr<'a>>),
+    Param(Vec<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -216,6 +218,7 @@ impl fmt::Display for Expr <'_> {
             Expr::Empty =>  write!(f, "{}", "Empty"),
             Expr::While(l, r) =>  write!(f, "while {} ({})", l.to_string(), r.to_string()),
             Expr::Func(i, e, t, r) =>  write!(f, "fn {}({}) -> {} ({})", i.to_string(), e.to_string(), t.to_string(), r.to_string()),
+            Expr::Param(s) =>  write!(f, "{:?}", s),
         }
     }
 }
@@ -328,7 +331,7 @@ fn parse_mytype(input: &str) -> IResult<&str, MyType> {
         alt((
             tag("i32"),
             tag("bool"),
-            tag("str"),
+            tag("Str"),
             tag("None"),
         ))
     ),
@@ -474,14 +477,24 @@ fn parse_func(input: &str) -> IResult<&str, Expr> {
         tuple((
             preceded(multispace0, tag("fn")),
             parse_ident, 
-            tag("("),
-            parse_expr, 
-            preceded(multispace0, tag(")")), 
+            parse_param,
             preceded(multispace0, tag("->")),
             parse_mytype,
             parse_body,
         )),
-        |(_, i, _, e, _, _, t, b)| Expr::Func(Box::new(i), Box::new(e), t, Box::new(b))
+        |(_, i, p, _, t, b)| Expr::Func(Box::new(i), Box::new(p), t, Box::new(b))
+    )(input)
+}
+
+
+fn parse_param(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            preceded(multispace0, tag("(")), 
+            separated_list(tag(","), parse_ident),
+            preceded(multispace0, tag(")")), 
+        )),
+        |(_, v, _)| Expr::Param(v)
     )(input)
 }
 
