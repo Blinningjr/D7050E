@@ -15,7 +15,7 @@ use std::{
  *  Needed for creating SyntaxError. 
  *  src: https://doc.rust-lang.org/std/str/trait.FromStr.html
  */
-type Result<T> = std::result::Result<T, SyntaxError>;
+pub type Result<T> = std::result::Result<T, SyntaxError>;
 #[derive(Debug, Clone)]
 pub struct SyntaxError;
 
@@ -519,34 +519,4 @@ pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
             )),
         |v| Expr::Funcs(v)
     )(input)
-}
-
-
-/**
- *  Calculates the value of an math expression.
- */
-pub fn math_expr_eval(e: Expr) -> Result<i32> {
-    match e {
-        Expr::Num(i) => Ok(i),
-        Expr::BinOp(l, op, r) => {
-            let left_value = math_expr_eval(*l).unwrap();
-            let right_value = math_expr_eval(*r).unwrap();
-            match op {
-                Op::Add => Ok(left_value + right_value),
-                Op::Sub => Ok(left_value - right_value),
-                Op::Div => Ok(left_value / right_value),
-                Op::Multi => Ok(left_value * right_value),
-                Op::Mod => Ok(left_value % right_value),
-                _ => Err(SyntaxError),
-            }
-        }
-        Expr::UnOp(op, r) => {
-            let right_value = math_expr_eval(*r).unwrap();
-            match op {
-                Op::Sub => Ok(-right_value),
-                _ => Err(SyntaxError),
-            }
-        }
-        _ => Err(SyntaxError),
-    }
 }
