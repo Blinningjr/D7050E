@@ -51,7 +51,7 @@ use std::collections::HashMap;
 /** 
  *  Defins Env that stores variables and functions.
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Env {
     mem: HashMap<String, Val>,
 }
@@ -108,6 +108,10 @@ fn interp_expr(e: Expr, env: &mut Env) -> Result<Val> {
         Expr::Assign(i, v) => interp_assign(*i, *v, env),
         Expr::Ident(s) => env.load(s),
         Expr::If(b, lb, rb) => interp_if(*b, *lb, *rb, env),
+        Expr::While(expr, b) => {
+            interp_while(*expr, *b, env);
+            Ok(Val::Empty)
+        }
         _ => Err(InterpError),
     }
 }
@@ -282,4 +286,19 @@ fn interp_body(es: Vec<Expr>, env: &mut Env) -> () {
         interp_expr(e, env);
     }
 }
-   
+
+
+/** 
+ *  Interprets while in ast.
+*/
+fn interp_while(e: Expr, b: Expr, env: &mut Env) -> () {
+    let v = match b {
+        Expr::Body(v) => Ok(v),
+        _ => Err(InterpError),
+    };
+    let mut w = get_bool(interp_expr(e.clone(), env).unwrap()).unwrap();
+    while w {
+        interp_body(v.clone().unwrap(), env);
+        w = get_bool(interp_expr(e.clone(), env).unwrap()).unwrap();
+    }
+}
