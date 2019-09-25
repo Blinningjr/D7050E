@@ -65,7 +65,11 @@ impl<'a> Env {
         self.mem.insert(ident, val);
     }
     pub fn load(&mut self, key: &'a str) -> Result<Val>{
-        Ok(self.mem.get(key).unwrap().clone())
+        // Ok(self.mem.get(key).unwrap().clone())
+        match self.mem.get(key) {
+            Some(val) => Ok(val.clone()),
+            None => Err(InterpError),
+        }
     }
 }
 
@@ -103,6 +107,7 @@ fn interp_expr(e: Expr, env: &mut Env) -> Result<Val> {
         Expr::BinOp(lv, op, rv) => Ok(interp_binop(*lv, op, *rv, env).unwrap()),
         Expr::Assign(i, v) => interp_assign(*i, *v, env),
         Expr::Ident(s) => env.load(s),
+        Expr::If(b, lb, rb) => interp_if(*b, *lb, *rb, env),
         _ => Err(InterpError),
     }
 }
@@ -229,7 +234,9 @@ fn get_bool(v: Val) -> Result<bool> {
 }
 
 
-
+/** 
+ *  Interprets assignments in ast.
+*/
 fn interp_assign(ident: Expr, value: Expr, env: &mut Env) -> Result<Val> {
     match ident {
         Expr::Assign(i, _t) =>{
@@ -244,3 +251,35 @@ fn interp_assign(ident: Expr, value: Expr, env: &mut Env) -> Result<Val> {
         },
     }
 }
+
+
+/** 
+ *  Interprets if statments in ast.
+*/
+fn interp_if(e: Expr, lb: Expr, rb: Expr, env: &mut Env) -> Result<Val> {
+    let mut res = Ok(Val::Empty);
+    if get_bool(interp_expr(e, env).unwrap()).unwrap() {
+        match lb {
+            Expr::Body(es) => interp_body(es, env),
+            _ => res = Err(InterpError),
+        };
+    } else {
+        match rb {
+            Expr::Body(es) => interp_body(es, env),
+            Expr::Empty => res = Ok(Val::Empty),
+            _ => res = Err(InterpError),
+        };
+    }
+    return res;
+}
+
+
+/** 
+ *  Interprets body in ast.
+*/
+fn interp_body(es: Vec<Expr>, env: &mut Env) -> () {
+    for e in es {
+        interp_expr(e, env);
+    }
+}
+   
