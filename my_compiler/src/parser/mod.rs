@@ -354,8 +354,9 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
             parse_ident, 
             preceded(multispace0, tag("=")), 
             preceded(multispace0, parse_expr), 
-            preceded(multispace0, tag(";")))),
-            |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
+            preceded(multispace0, tag(";")),
+        )),
+        |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
     )(input)
 }
 
@@ -386,6 +387,7 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
  */
 pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+        parse_func,
         parse_while,
         parse_if,
         parse_let,
@@ -540,13 +542,56 @@ pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
  *  Parse a Function call into expresion from string.
  */
 pub fn parse_func_call(input: &str) -> IResult<&str, Expr> {
-    map(
-        preceded(multispace0,
-            tuple((
-                parse_ident,
-                parse_param,
-            )),
+    alt ((
+        map(
+            preceded(multispace0,
+                tuple((
+                    parse_ident,
+                    parse_param,
+                    tag(";"),
+                )),
+            ),
+            |(i, p, _)| Expr::FuncCall(Box::new(i), Box::new(p))
         ),
-        |(i, p)| Expr::FuncCall(Box::new(i), Box::new(p))
-    )(input)
+        map(
+            preceded(multispace0,
+                tuple((
+                    parse_ident,
+                    parse_param,
+                )),
+            ),
+            |(i, p)| Expr::FuncCall(Box::new(i), Box::new(p))
+        ),
+    ))(input)
+}
+
+
+/**
+ *  Calculates the value of an math expression.
+ *  Needed for tests.
+ */
+pub fn math_expr_eval(e: Expr) -> Result<i32> {
+    match e {
+        Expr::Num(i) => Ok(i),
+        Expr::BinOp(l, op, r) => {
+            let left_value = math_expr_eval(*l).unwrap();
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Op::Add => Ok(left_value + right_value),
+                Op::Sub => Ok(left_value - right_value),
+                Op::Div => Ok(left_value / right_value),
+                Op::Multi => Ok(left_value * right_value),
+                Op::Mod => Ok(left_value % right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+        Expr::UnOp(op, r) => {
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Op::Sub => Ok(-right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+        _ => Err(SyntaxError),
+    }
 }

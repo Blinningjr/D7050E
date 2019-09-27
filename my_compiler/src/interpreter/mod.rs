@@ -63,8 +63,11 @@ impl<'a> Env<'a> {
             mem_func: HashMap::new(),
         }
     }
-    pub fn store(&mut self, ident: String, val: Val) {
+    pub fn store_var(&mut self, ident: String, val: Val) {
         self.mem_var.insert(ident, val);
+    }
+    pub fn store_func(&mut self, ident: String, func: Expr<'a> , env: Env<'a>) {
+        self.mem_func.insert(ident, (func, env));
     }
     pub fn load_var(&mut self, key: &'a str) -> Result<Val>{
         match self.mem_var.get(key) {
@@ -72,11 +75,11 @@ impl<'a> Env<'a> {
             None => Err(InterpError),
         }
     }
-    pub fn load_func(&mut self, key: &'a str, p: Expr<'a>) -> Result<Val>{
+    pub fn load_func(&mut self, key: &'a str, pv: Vec<Expr>) -> Result<Val>{
         match self.mem_func.get(key) {
             Some(tup) => {
                 match &tup.0 {
-                    Expr::Func(i, _, t, b) => return interp_func(*i.clone(), p, t.clone(), *b.clone(), &mut tup.1.clone()),
+                    Expr::Func(i, p, t, b) => interp_func(*i.clone(), *p.clone(), pv, t.clone(), *b.clone(), &mut tup.1.clone()),
                     _ => Err(InterpError),
                 }
             },
@@ -102,7 +105,7 @@ enum Val {
 */
 pub fn interp_ast(e: Expr) -> () {
     let mut env = Env::new();
-    // env.store("test".to_string(), Val::Num(5));
+    // env.store_var("test".to_string(), Val::Num(5));
     println!("{:?}", interp_expr(e, &mut env));
     println!("{:?}", env);
 }
@@ -112,7 +115,7 @@ pub fn interp_ast(e: Expr) -> () {
  *  Interprets expresions in ast.
 */
 fn interp_expr<'a>(e: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
-    match e {
+    match e.clone() {
         Expr::Num(i) => Ok(Val::Num(i)),
         Expr::Bool(i) => Ok(Val::Bool(i)),
         Expr::UnOp(op, rv) => Ok(interp_unop(op, *rv, env).unwrap()),
@@ -121,6 +124,9 @@ fn interp_expr<'a>(e: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
         Expr::Ident(s) => env.load_var(s),
         Expr::If(b, lb, rb) => interp_if(*b, *lb, *rb, env),
         Expr::While(expr, b) => interp_while(*expr, *b, env),
+        Expr::FuncCall(i,p) => interp_func_call(*i, *p, env),
+        Expr::Func(i, _, _, _) => store_func_in_env(e, *i, env),
+        Expr::Funcs(v) => interp_funcs(v, env),
         _ => Err(InterpError),
     }
 }
@@ -254,12 +260,12 @@ fn interp_assign<'a>(ident: Expr<'a>, value: Expr<'a>, env: &mut Env<'a>) -> Res
     match ident {
         Expr::Assign(i, _t) =>{
             let val = interp_expr(value, env).unwrap();
-            env.store(i.to_string(), val.clone());
+            env.store_var(i.to_string(), val.clone());
             return Ok(val);
         },
         _ => {
             let val = interp_expr(value, env).unwrap();
-            env.store(ident.to_string(), val.clone());
+            env.store_var(ident.to_string(), val.clone());
             return Ok(val);
         },
     }
@@ -318,8 +324,66 @@ fn interp_while<'a>(e: Expr<'a>, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> 
 
 
 /** 
- *  Interprets func in ast.
+ *  Interprets function calls in ast.
 */
-fn interp_func<'a>(i: Expr<'a>, p: Expr<'a>, t: MyType, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
-    Ok(Val::Empty)
+fn interp_func_call<'a>(i: Expr<'a>, p: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+    match i {
+        Expr::Ident(s) => {
+            match p {
+                Expr::Param(v) => env.load_func(s, v),
+                _ => Err(InterpError),
+            }
+        }
+        _ => Err(InterpError),
+    }
+}
+
+
+/** 
+ *  Interprets function in ast.
+*/
+fn interp_func<'a>(i: Expr<'a>, p: Expr<'a>, pv: Vec<Expr<'a>>, t: MyType, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+    let mut res = Ok(Val::Empty);
+    match p {
+        Expr::Param(param) => {
+            let mut j = 0;
+            for p_var in param { 
+                match p_var {
+                    Expr::Ident(s) => env.store_var(s.to_string(), interp_expr(pv[j].clone(), &mut env.clone()).unwrap()),
+                    Expr::Assign(ident, _t) => res = interp_assign(*ident, pv[j].clone(), env),
+                    _ => res = Err(InterpError),
+                }
+                j += 1;
+            }
+        }
+        _ => res = Err(InterpError),
+    }
+    match b {
+        Expr::Body(es) => res = interp_body(es, env),
+        _ => res = Err(InterpError),
+    }
+    return res;
+}
+
+/** 
+ *  Store function in env.
+*/
+fn store_func_in_env<'a>(f: Expr<'a>, i: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+    env.store_func(i.to_string(), f, env.clone());
+    return Ok(Val::Empty);
+}
+
+/** 
+ *  Interprets function in ast and store them in env.
+*/
+fn interp_funcs<'a>(funcs: Vec<Expr<'a>>, env: &mut Env<'a>) -> Result<Val> {
+    let mut res = Ok(Val::Empty);
+    for func in funcs {
+        match func.clone() {
+            Expr::Func(i, _, _, _) => res = store_func_in_env(func, *i, env),
+            _ => res = Err(InterpError),
+        }
+    }
+    res = env.load_func(&"main", Vec::new());
+    return res;
 }
