@@ -510,7 +510,7 @@ fn parse_param(input: &str) -> IResult<&str, Expr> {
         map(
             tuple((
                 preceded(multispace0, tag("(")), 
-                separated_list(tag(","), parse_singel_expr),
+                separated_list(tag(","), parse_expr),
                 preceded(multispace0, tag(")")), 
             )),
             |(_, v, _)| Expr::Param(v)
