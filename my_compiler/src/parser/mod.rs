@@ -197,6 +197,7 @@ pub enum Expr<'a> {
     Func(Box<Expr<'a>>, Box<Expr<'a>>, MyType, Box<Expr<'a>>),
     Param(Vec<Expr<'a>>),
     Funcs(Vec<Expr<'a>>),
+    FuncCall(Box<Expr<'a>>, Box<Expr<'a>>),
 }
 use Expr::Num;
 
@@ -221,6 +222,7 @@ impl fmt::Display for Expr <'_> {
             Expr::Func(i, e, t, r) =>  write!(f, "fn {}({}) -> {} ({})", i.to_string(), e.to_string(), t.to_string(), r.to_string()),
             Expr::Param(s) =>  write!(f, "{:?}", s),
             Expr::Funcs(s) =>  write!(f, "{:?}", s),
+            Expr::FuncCall(i, p) =>  write!(f, "({:?} {:?})", i.to_string(),  p.to_string()),
         }
     }
 }
@@ -363,6 +365,7 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
  */
 fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
     alt((
+
         map(
             tuple((
                 preceded(multispace0, tag("(")),
@@ -401,6 +404,7 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
             )),
             |(l, r)| Expr::UnOp(l, Box::new(r)),
         ),
+        parse_func_call,
         parse_singel_expr,
     ))(input)
 }
@@ -492,14 +496,24 @@ fn parse_func(input: &str) -> IResult<&str, Expr> {
  *  Parse a Parameter expresion from string.
  */
 fn parse_param(input: &str) -> IResult<&str, Expr> {
-    map(
-        tuple((
-            preceded(multispace0, tag("(")), 
-            separated_list(tag(","), parse_ident),
-            preceded(multispace0, tag(")")), 
-        )),
-        |(_, v, _)| Expr::Param(v)
-    )(input)
+    alt ((
+        map(
+            tuple((
+                preceded(multispace0, tag("(")), 
+                separated_list(tag(","), parse_ident),
+                preceded(multispace0, tag(")")), 
+            )),
+            |(_, v, _)| Expr::Param(v)
+        ),
+        map(
+            tuple((
+                preceded(multispace0, tag("(")), 
+                separated_list(tag(","), parse_singel_expr),
+                preceded(multispace0, tag(")")), 
+            )),
+            |(_, v, _)| Expr::Param(v)
+        ),
+    ))(input)
 }
 
 
@@ -518,5 +532,21 @@ pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
                 }
             )),
         |v| Expr::Funcs(v)
+    )(input)
+}
+
+
+/**
+ *  Parse a Function call into expresion from string.
+ */
+pub fn parse_func_call(input: &str) -> IResult<&str, Expr> {
+    map(
+        preceded(multispace0,
+            tuple((
+                parse_ident,
+                parse_param,
+            )),
+        ),
+        |(i, p)| Expr::FuncCall(Box::new(i), Box::new(p))
     )(input)
 }
