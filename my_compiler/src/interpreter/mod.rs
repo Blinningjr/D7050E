@@ -52,22 +52,34 @@ use std::collections::HashMap;
  *  Defins Env that stores variables and functions.
 */
 #[derive(Debug, PartialEq, Clone)]
-pub struct Env {
-    mem: HashMap<String, Val>,
+pub struct Env<'a> {
+    mem_var: HashMap<String, Val>,
+    mem_func: HashMap<String, (Expr<'a>, Env<'a>)>,
 }
-impl<'a> Env {
-    pub fn new() -> Env {
+impl<'a> Env<'a> {
+    pub fn new() -> Env<'a> {
         Env {
-            mem: HashMap::new(),
+            mem_var: HashMap::new(),
+            mem_func: HashMap::new(),
         }
     }
     pub fn store(&mut self, ident: String, val: Val) {
-        self.mem.insert(ident, val);
+        self.mem_var.insert(ident, val);
     }
-    pub fn load(&mut self, key: &'a str) -> Result<Val>{
-        // Ok(self.mem.get(key).unwrap().clone())
-        match self.mem.get(key) {
+    pub fn load_var(&mut self, key: &'a str) -> Result<Val>{
+        match self.mem_var.get(key) {
             Some(val) => Ok(val.clone()),
+            None => Err(InterpError),
+        }
+    }
+    pub fn load_func(&mut self, key: &'a str, p: Expr<'a>) -> Result<Val>{
+        match self.mem_func.get(key) {
+            Some(tup) => {
+                match &tup.0 {
+                    Expr::Func(i, _, t, b) => return interp_func(*i.clone(), p, t.clone(), *b.clone(), &mut tup.1.clone()),
+                    _ => Err(InterpError),
+                }
+            },
             None => Err(InterpError),
         }
     }
@@ -99,19 +111,16 @@ pub fn interp_ast(e: Expr) -> () {
 /** 
  *  Interprets expresions in ast.
 */
-fn interp_expr(e: Expr, env: &mut Env) -> Result<Val> {
+fn interp_expr<'a>(e: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     match e {
         Expr::Num(i) => Ok(Val::Num(i)),
         Expr::Bool(i) => Ok(Val::Bool(i)),
         Expr::UnOp(op, rv) => Ok(interp_unop(op, *rv, env).unwrap()),
         Expr::BinOp(lv, op, rv) => Ok(interp_binop(*lv, op, *rv, env).unwrap()),
         Expr::Assign(i, v) => interp_assign(*i, *v, env),
-        Expr::Ident(s) => env.load(s),
+        Expr::Ident(s) => env.load_var(s),
         Expr::If(b, lb, rb) => interp_if(*b, *lb, *rb, env),
-        Expr::While(expr, b) => {
-            interp_while(*expr, *b, env);
-            Ok(Val::Empty)
-        }
+        Expr::While(expr, b) => interp_while(*expr, *b, env),
         _ => Err(InterpError),
     }
 }
@@ -120,7 +129,7 @@ fn interp_expr(e: Expr, env: &mut Env) -> Result<Val> {
 /** 
  *  Interprets unary operations in ast.
 */
-fn interp_unop(op: Op, e: Expr, env: &mut Env) -> Result<Val> {
+fn interp_unop<'a>(op: Op, e: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     match op {
         Op::Sub => {
             let res = interp_expr(e, env).unwrap();
@@ -144,7 +153,7 @@ fn interp_unop(op: Op, e: Expr, env: &mut Env) -> Result<Val> {
 /** 
  *  Interprets binary operations in ast.
 */
-fn interp_binop(lv: Expr, op: Op, rv: Expr, env: &mut Env) -> Result<Val> {
+fn interp_binop<'a>(lv: Expr<'a>, op: Op, rv: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     match op {
         Op::Add => Ok(Val::Num(
             get_int(interp_expr(lv, env).unwrap()).unwrap()
@@ -241,7 +250,7 @@ fn get_bool(v: Val) -> Result<bool> {
 /** 
  *  Interprets assignments in ast.
 */
-fn interp_assign(ident: Expr, value: Expr, env: &mut Env) -> Result<Val> {
+fn interp_assign<'a>(ident: Expr<'a>, value: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     match ident {
         Expr::Assign(i, _t) =>{
             let val = interp_expr(value, env).unwrap();
@@ -260,16 +269,16 @@ fn interp_assign(ident: Expr, value: Expr, env: &mut Env) -> Result<Val> {
 /** 
  *  Interprets if statments in ast.
 */
-fn interp_if(e: Expr, lb: Expr, rb: Expr, env: &mut Env) -> Result<Val> {
+fn interp_if<'a>(e: Expr<'a>, lb: Expr<'a>, rb: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     let mut res = Ok(Val::Empty);
     if get_bool(interp_expr(e, env).unwrap()).unwrap() {
         match lb {
-            Expr::Body(es) => interp_body(es, env),
+            Expr::Body(es) => res = interp_body(es, env),
             _ => res = Err(InterpError),
         };
     } else {
         match rb {
-            Expr::Body(es) => interp_body(es, env),
+            Expr::Body(es) => res = interp_body(es, env),
             Expr::Empty => res = Ok(Val::Empty),
             _ => res = Err(InterpError),
         };
@@ -281,24 +290,36 @@ fn interp_if(e: Expr, lb: Expr, rb: Expr, env: &mut Env) -> Result<Val> {
 /** 
  *  Interprets body in ast.
 */
-fn interp_body(es: Vec<Expr>, env: &mut Env) -> () {
+fn interp_body<'a>(es: Vec<Expr<'a>>, env: &mut Env<'a>) -> Result<Val> {
+    let mut res = Ok(Val::Empty);
     for e in es {
-        interp_expr(e, env);
+        res = interp_expr(e, env);
     }
+    return res;
 }
 
 
 /** 
  *  Interprets while in ast.
 */
-fn interp_while(e: Expr, b: Expr, env: &mut Env) -> () {
+fn interp_while<'a>(e: Expr<'a>, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+    let mut res = Ok(Val::Empty);
     let v = match b {
         Expr::Body(v) => Ok(v),
         _ => Err(InterpError),
     };
     let mut w = get_bool(interp_expr(e.clone(), env).unwrap()).unwrap();
     while w {
-        interp_body(v.clone().unwrap(), env);
+        res = interp_body(v.clone().unwrap(), env);
         w = get_bool(interp_expr(e.clone(), env).unwrap()).unwrap();
     }
+    return res;
+}
+
+
+/** 
+ *  Interprets func in ast.
+*/
+fn interp_func<'a>(i: Expr<'a>, p: Expr<'a>, t: MyType, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+    Ok(Val::Empty)
 }
