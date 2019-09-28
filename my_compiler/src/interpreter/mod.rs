@@ -42,7 +42,7 @@ impl error::Error for InterpError {
 #[path = "../parser/mod.rs"]
 mod parser;
 use crate::parser::Expr;
-use crate::parser::Op;
+use crate::parser::op::Op;
 use crate::parser::MyType;
 
 use std::collections::HashMap;
