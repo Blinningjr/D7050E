@@ -5,26 +5,8 @@
  */
 #[path = "../src/parser/mod.rs"]
 mod parser;
-
-/**
- *  Import parser function parse_expr.
- */
 #[allow(unused_imports)]
-use crate::parser::parse_expr;
-
-
-/**
- *  Import parser function math_expr_eval.
- */
-#[allow(unused_imports)]
-use crate::parser::math_expr_eval;
-
-
-/**
- *  Import parser function parse_funcs.
- */
-#[allow(unused_imports)]
-use crate::parser::parse_funcs;
+use crate::parser::{parse_expr, parse_funcs};
 
 
 /**
@@ -47,6 +29,7 @@ use crate::parser::expr::Expr::{
     Param,
     Funcs,
 };
+use crate::parser::expr::Expr;
 
 
 /**
@@ -81,6 +64,39 @@ use crate::parser::mytype::MyType::{
     Str,
     None,
 };
+
+use crate::parser::error::{SyntaxError, Result};
+
+
+/**
+ *  Calculates the value of an math expression.
+ *  Needed for tests.
+ */
+pub fn math_expr_eval(e: Expr) -> Result<i32> {
+    match e {
+        Num(i) => Ok(i),
+        BinOp(l, op, r) => {
+            let left_value = math_expr_eval(*l).unwrap();
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Add => Ok(left_value + right_value),
+                Sub => Ok(left_value - right_value),
+                Div => Ok(left_value / right_value),
+                Multi => Ok(left_value * right_value),
+                Mod => Ok(left_value % right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+        UnOp(op, r) => {
+            let right_value = math_expr_eval(*r).unwrap();
+            match op {
+                Sub => Ok(-right_value),
+                _ => Err(SyntaxError),
+            }
+        }
+        _ => Err(SyntaxError),
+    }
+}
 
 
 /**
