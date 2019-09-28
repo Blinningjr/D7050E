@@ -41,9 +41,9 @@ impl error::Error for InterpError {
  */
 #[path = "../parser/mod.rs"]
 mod parser;
-use crate::parser::Expr;
+use crate::parser::expr::Expr;
 use crate::parser::op::Op;
-use crate::parser::MyType;
+use crate::parser::mytype::MyType;
 
 use std::collections::HashMap;
 
@@ -57,25 +57,25 @@ pub struct Env<'a> {
     mem_func: HashMap<String, (Expr<'a>, Env<'a>)>,
 }
 impl<'a> Env<'a> {
-    pub fn new() -> Env<'a> {
+    fn new() -> Env<'a> {
         Env {
             mem_var: HashMap::new(),
             mem_func: HashMap::new(),
         }
     }
-    pub fn store_var(&mut self, ident: String, val: Val) {
+    fn store_var(&mut self, ident: String, val: Val) {
         self.mem_var.insert(ident, val);
     }
-    pub fn store_func(&mut self, ident: String, func: Expr<'a> , env: Env<'a>) {
+    fn store_func(&mut self, ident: String, func: Expr<'a> , env: Env<'a>) {
         self.mem_func.insert(ident, (func, env));
     }
-    pub fn load_var(&mut self, key: &'a str) -> Result<Val>{
+    fn load_var(&mut self, key: &'a str) -> Result<Val>{
         match self.mem_var.get(key) {
             Some(val) => Ok(val.clone()),
             None => Err(InterpError),
         }
     }
-    pub fn load_func(&mut self, key: &'a str, pv: Vec<Expr>) -> Result<Val>{
+    fn load_func(&mut self, key: &'a str, pv: Vec<Expr>) -> Result<Val>{
         match self.mem_func.get(key) {
             Some(tup) => {
                 match &tup.0 {

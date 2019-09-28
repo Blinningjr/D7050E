@@ -31,7 +31,7 @@ use crate::parser::parse_funcs;
  *  Import enum Expr.
  */
 #[allow(unused_imports)]
-use crate::parser::Expr::{
+use crate::parser::expr::Expr::{
     Num,
     Bool,
     BinOp,
@@ -53,7 +53,7 @@ use crate::parser::Expr::{
  *  Import enum Op.
  */
 #[allow(unused_imports)]
-use crate::parser::Op::{
+use crate::parser::op::Op::{
     Add,        // "+"
     Sub,        // "-"
     Div,        // "/"
@@ -75,7 +75,7 @@ use crate::parser::Op::{
  *  Import enum MyType.
  */
 #[allow(unused_imports)]
-use crate::parser::MyType::{
+use crate::parser::mytype::MyType::{
     Int32,
     Boolean,
     Str,
