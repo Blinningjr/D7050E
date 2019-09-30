@@ -273,7 +273,7 @@ fn interp_func<'a>(_i: Expr<'a>, p: Expr<'a>, pv: Vec<Expr<'a>>, _t: MyType, b: 
             let mut j = 0;
             for p_var in param { 
                 match p_var {
-                    Expr::Ident(s) => env.store_var(s.to_string(), interp_expr(pv[j].clone(), &mut env.clone()).unwrap()),
+                    Expr::Ident(s) => {env.store_var(s.to_string(), interp_expr(pv[j].clone(), &mut env.clone()).unwrap()); ()},
                     Expr::Assign(ident, _t) => res = interp_assign(*ident, pv[j].clone(), env),
                     _ => res = Err(InterpError),
                 }
@@ -293,7 +293,7 @@ fn interp_func<'a>(_i: Expr<'a>, p: Expr<'a>, pv: Vec<Expr<'a>>, _t: MyType, b: 
  *  Store function in env.
 */
 fn store_func_in_env<'a>(f: Expr<'a>, i: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
-    env.store_func(i.to_string(), f, env.clone());
+    env.store_func(i.to_string(), f);
     return Ok(Val::Empty);
 }
 

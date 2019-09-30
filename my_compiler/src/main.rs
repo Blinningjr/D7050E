@@ -11,7 +11,7 @@ pub use crate::interpreter::interp_ast;
 
 fn main() {
     // println!("{:#?}", parse_funcs("fn apor(input: Str, test) -> bool { let apa = 10; while apa >= 2 { let apa = 10 /2 * 5 -2;}} fn test(inp) -> None { if inp == false { let inp = true; } else { let inp = false;} if inp { let apa = 5 % 2; }}")); 
-    let v = parse_funcs(" fn tio(i: i32) -> i32 {10} fn main() -> None {tio(1);}").unwrap();
+    let v = parse_funcs(" fn tio(i: i32) -> i32 {if i < 10 {tio(i + 1)} else{i}} fn main() -> None {tio(1);}").unwrap();
     // println!("{:#?}", v);
     println!("{:?} : {:#?}" , v.0, interp_ast(v.1));
 
