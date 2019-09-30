@@ -249,7 +249,7 @@ fn interp_func_call<'a>(i: Expr<'a>, p: Expr<'a>, env: &mut Env<'a>) -> Result<V
         Expr::Ident(s) => {
             match p {
                 Expr::Param(v) => {
-                    let tup = env.load_func(s, v.clone()).unwrap();
+                    let tup = env.load_func(s).unwrap();
                     match &tup.0 {
                         Expr::Func(i, p, t, b) => interp_func(*i.clone(), *p.clone(), v, t.clone(), *b.clone(), &mut tup.1.clone()),
                         _ => Err(InterpError),
@@ -266,7 +266,7 @@ fn interp_func_call<'a>(i: Expr<'a>, p: Expr<'a>, env: &mut Env<'a>) -> Result<V
 /** 
  *  Interprets function in ast.
 */
-fn interp_func<'a>(i: Expr<'a>, p: Expr<'a>, pv: Vec<Expr<'a>>, t: MyType, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
+fn interp_func<'a>(_i: Expr<'a>, p: Expr<'a>, pv: Vec<Expr<'a>>, _t: MyType, b: Expr<'a>, env: &mut Env<'a>) -> Result<Val> {
     let mut res = Ok(Val::Empty);
     match p {
         Expr::Param(param) => {
@@ -308,11 +308,9 @@ fn interp_funcs<'a>(funcs: Vec<Expr<'a>>, env: &mut Env<'a>) -> Result<Val> {
             _ => res = Err(InterpError),
         }
     }
-    // res = env.load_func(&"main", Vec::new());
-    let v = Vec::new();
-    let tup = env.load_func(&"main", v.clone()).unwrap();
+    let tup = env.load_func(&"main").unwrap();
     match &tup.0 {
-        Expr::Func(i, p, t, b) => res = interp_func(*i.clone(), *p.clone(), v, t.clone(), *b.clone(), &mut tup.1.clone()),
+        Expr::Func(i, p, t, b) => res = interp_func(*i.clone(), *p.clone(), Vec::new(), t.clone(), *b.clone(), &mut tup.1.clone()),
         _ => res = Err(InterpError),
     }
     return res;

@@ -33,7 +33,7 @@ impl<'a> Env<'a> {
             None => Err(InterpError),
         }
     }
-    pub fn load_func(&mut self, key: &'a str, pv: Vec<Expr>) -> Result<(Expr, Env)>{
+    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr, Env)>{
         match self.mem_func.get(key) {
             Some(tup) => Ok(tup.clone()),
             _ => Err(InterpError),
