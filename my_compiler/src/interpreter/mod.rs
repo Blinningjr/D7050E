@@ -1,39 +1,11 @@
-/**
- *  std imports.
- */
-use std::{
-    error,
-    fmt,
-};
+pub mod interperror;
+use interperror::{Result, InterpError};
 
-/** 
- *  Needed for creating InterpError. 
- *  src: https://doc.rust-lang.org/std/str/trait.FromStr.html
- */
-pub type Result<T> = std::result::Result<T, InterpError>;
-#[derive(Debug, Clone)]
-pub struct InterpError;
+pub mod val;
+use val::Val;
 
-
-/** 
- * 
- */
-impl fmt::Display for InterpError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error something is wrong")
-    }
-}
-
-
-/** 
- *  This is important for other errors to wrap this one.
- */ 
-impl error::Error for InterpError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        // Generic error, underlying cause isn't tracked.
-        None
-    }
-}
+pub mod env;
+use env::Env;
 
 
 /**
@@ -44,60 +16,6 @@ mod parser;
 use crate::parser::expr::Expr;
 use crate::parser::op::Op;
 use crate::parser::mytype::MyType;
-
-use std::collections::HashMap;
-
-
-/** 
- *  Defins Env that stores variables and functions.
-*/
-#[derive(Debug, PartialEq, Clone)]
-pub struct Env<'a> {
-    mem_var: HashMap<String, Val>,
-    mem_func: HashMap<String, (Expr<'a>, Env<'a>)>,
-}
-impl<'a> Env<'a> {
-    fn new() -> Env<'a> {
-        Env {
-            mem_var: HashMap::new(),
-            mem_func: HashMap::new(),
-        }
-    }
-    fn store_var(&mut self, ident: String, val: Val) {
-        self.mem_var.insert(ident, val);
-    }
-    fn store_func(&mut self, ident: String, func: Expr<'a> , env: Env<'a>) {
-        self.mem_func.insert(ident, (func, env));
-    }
-    fn load_var(&mut self, key: &'a str) -> Result<Val>{
-        match self.mem_var.get(key) {
-            Some(val) => Ok(val.clone()),
-            None => Err(InterpError),
-        }
-    }
-    fn load_func(&mut self, key: &'a str, pv: Vec<Expr>) -> Result<Val>{
-        match self.mem_func.get(key) {
-            Some(tup) => {
-                match &tup.0 {
-                    Expr::Func(i, p, t, b) => interp_func(*i.clone(), *p.clone(), pv, t.clone(), *b.clone(), &mut tup.1.clone()),
-                    _ => Err(InterpError),
-                }
-            },
-            None => Err(InterpError),
-        }
-    }
-}
-
-
-/** 
- *  Defins Val so bool and i32 can be returnd.
-*/
-#[derive(Debug, PartialEq, Clone)]
-enum Val {
-    Num(i32),
-    Bool(bool),
-    Empty,
-}
 
 
 /** 
@@ -330,7 +248,13 @@ fn interp_func_call<'a>(i: Expr<'a>, p: Expr<'a>, env: &mut Env<'a>) -> Result<V
     match i {
         Expr::Ident(s) => {
             match p {
-                Expr::Param(v) => env.load_func(s, v),
+                Expr::Param(v) => {
+                    let tup = env.load_func(s, v.clone()).unwrap();
+                    match &tup.0 {
+                        Expr::Func(i, p, t, b) => interp_func(*i.clone(), *p.clone(), v, t.clone(), *b.clone(), &mut tup.1.clone()),
+                        _ => Err(InterpError),
+                    }
+                },
                 _ => Err(InterpError),
             }
         }
@@ -384,6 +308,12 @@ fn interp_funcs<'a>(funcs: Vec<Expr<'a>>, env: &mut Env<'a>) -> Result<Val> {
             _ => res = Err(InterpError),
         }
     }
-    res = env.load_func(&"main", Vec::new());
+    // res = env.load_func(&"main", Vec::new());
+    let v = Vec::new();
+    let tup = env.load_func(&"main", v.clone()).unwrap();
+    match &tup.0 {
+        Expr::Func(i, p, t, b) => res = interp_func(*i.clone(), *p.clone(), v, t.clone(), *b.clone(), &mut tup.1.clone()),
+        _ => res = Err(InterpError),
+    }
     return res;
 }

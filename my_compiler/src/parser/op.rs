@@ -7,7 +7,7 @@ use std::{
 };
 
 
-use super::error::{Result, SyntaxError};
+use super::syntaxerror::{Result, SyntaxError};
 
 
 /**

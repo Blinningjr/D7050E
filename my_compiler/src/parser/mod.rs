@@ -2,9 +2,8 @@ extern crate nom;
 
 use std::str::FromStr;
 
-pub mod error;
-#[allow(unused_imports)]
-use error::{Result, SyntaxError};
+pub mod syntaxerror;
+use syntaxerror::{Result, SyntaxError};
 
 pub mod op;
 use op::Op;

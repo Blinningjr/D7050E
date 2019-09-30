@@ -65,7 +65,7 @@ use crate::parser::mytype::MyType::{
     None,
 };
 
-use crate::parser::error::{SyntaxError, Result};
+use crate::parser::syntaxerror::{SyntaxError, Result};
 
 
 /**
