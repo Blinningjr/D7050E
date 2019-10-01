@@ -7,7 +7,7 @@ use super::interperror::{InterpError, Result};
 use crate::parser::expr::Expr;
 
 #[derive(Debug, PartialEq, Clone)]
-enum NextEnv<'a> {
+pub enum NextEnv<'a> {
     Empty,
     Next(Box<Env<'a>>)
 }
@@ -62,9 +62,13 @@ impl<'a> Env<'a> {
             },
         }
     }
-    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr, Env)>{
+    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr, Env<'a>)>{
         match self.mem_func.get(key) {
-            Some(e) => Ok((e.clone(), self.clone())),
+            Some(e) => {
+                let mut env = self.clone();
+                self.mem_next = NextEnv::Empty;
+                Ok((e.clone(), env))
+            },
             _ => {
                 match &mut self.mem_next {
                     NextEnv::Empty => Err(InterpError),

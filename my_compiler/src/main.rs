@@ -1,3 +1,8 @@
+/**
+ * Required for reading files.
+ */
+use std::fs;
+
 #[path = "parser/mod.rs"]
 mod parser;
 #[path = "interpreter/mod.rs"]
@@ -10,10 +15,12 @@ pub use crate::interpreter::interp_ast;
 
 
 fn main() {
-    // println!("{:#?}", parse_funcs("fn apor(input: Str, test) -> bool { let apa = 10; while apa >= 2 { let apa = 10 /2 * 5 -2;}} fn test(inp) -> None { if inp == false { let inp = true; } else { let inp = false;} if inp { let apa = 5 % 2; }}")); 
-    let v = parse_funcs(" fn tio(i: i32) -> i32 {if i < 10 {tio(i + 1)} else{i}} fn main() -> None {tio(1);}").unwrap();
-    // println!("{:#?}", v);
-    println!("{:?} : {:#?}" , v.0, interp_ast(v.1));
 
-    // println!("{:#?}", parse_expr("test(1,2,3)"));
+    let contents = fs::read_to_string("src/test_code.rs")
+        .expect("Something went wrong reading the file");
+    // println!("{}", contents);
+
+    let f = parse_funcs(contents.as_str()).unwrap();
+    // println!("{:#?}" , f); // print parsed ast.
+    println!("{:?} : {:#?}" , f.0, interp_ast(f.1)); // Print interp and env.
 }

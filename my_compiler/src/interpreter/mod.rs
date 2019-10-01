@@ -6,6 +6,7 @@ use val::Val;
 
 pub mod env;
 use env::Env;
+use env::NextEnv;
 
 
 /**
@@ -308,9 +309,9 @@ fn interp_funcs<'a>(funcs: Vec<Expr<'a>>, env: &mut Env<'a>) -> Result<Val> {
             _ => res = Err(InterpError),
         }
     }
-    let tup = env.load_func(&"main").unwrap();
+    let mut tup = env.load_func(&"main").unwrap();
     match &tup.0 {
-        Expr::Func(i, p, t, b) => res = interp_func(*i.clone(), *p.clone(), Vec::new(), t.clone(), *b.clone(), &mut tup.1.clone()),
+        Expr::Func(i, p, t, b) => res = interp_func(*i.clone(), *p.clone(), Vec::new(), t.clone(), *b.clone(), &mut tup.1),
         _ => res = Err(InterpError),
     }
     return res;
