@@ -1,9 +1,9 @@
 extern crate nom;
 
-use std::str::FromStr;
+// use std::str::FromStr;
 
 pub mod syntaxerror;
-use syntaxerror::{Result, SyntaxError};
+// use syntaxerror::{Result, SyntaxError};
 
 pub mod op;
 use op::Op;
@@ -14,13 +14,12 @@ use mytype::MyType;
 pub mod expr;
 use expr::Expr;
 
-
 /**
  *  nom imports.
  */
 use nom::{
     branch::alt,
-    IResult,
+    // IResult,
     combinator::map,
     character::complete::{ digit1, alpha1, multispace0, multispace1},
     sequence::{preceded, tuple},
@@ -28,36 +27,84 @@ use nom::{
     combinator::map_res,
     multi::fold_many0,
     multi::separated_list,
+    error,
+    Err,
 };
+
+
+/** 
+ * #######################################################################
+ * Code borrow for span
+ */
+use nom_locate::LocatedSpan;
+pub type Span<'a> = LocatedSpan<&'a str>;
+
+#[derive(Debug)]
+pub struct Error<'a>(Span<'a>, Option<Span<'a>>, ErrorKind);
+pub type IResult<'a, I, O, E = Error<'a>> = Result<(I, O), Err<E>>;
+
+impl<'a> error::ParseError<Span<'a>> for Error<'a> {
+    fn from_error_kind(input: Span<'a>, kind: error::ErrorKind) -> Self {
+        Error(input, None, ErrorKind::Nom(kind))
+    }
+
+    fn append(_: Span<'a>, _: error::ErrorKind, other: Self) -> Self {
+        other
+    }
+}
+
+#[derive(Debug)]
+pub enum ErrorKind {
+    ParseIntError(std::num::ParseIntError),
+    Nom(error::ErrorKind),
+}
+
+pub type SpanOp<'a> = (Span<'a>, Op);
+
+pub type SpanExpr<'a> = (Span<'a>, Expr<'a>);
+
+pub type SpanMyType<'a> = (Span<'a>, MyType);
+
+// // dumps a Span into a String
+// fn dump_span(s: &Span) -> String {
+//     format!(
+//         "[line :{:?}, col:{:?}, {:?}]",
+//         s.line,
+//         s.get_column(),
+//         s.fragment
+//     )
+// }
+
+
+/** 
+ * #######################################################################
+ * end
+ */
 
 
 /**
  *  Parse a I32 expresion from string.
+ *  Note: Taken from teachers example
  */
-fn parse_i32(input: &str) -> IResult<&str, Expr> {
-    map(
-        preceded(
-            multispace0, 
-            digit1
-        ), 
-        |s: &str| Expr::Num(i32::from_str(s).unwrap())
-    )(input)
+fn parse_i32(input: Span) -> IResult<Span, SpanExpr> {
+    let (i, digits) = preceded(multispace0, digit1)(input)?;
+    match digits.fragment.parse() {
+        Ok(int) => Ok((i, (digits, Expr::Num(int)))),
+        Err(e) => Err(Err::Failure(Error(i, Some(digits), ErrorKind::ParseIntError(e)))),
+    }
 }
 
 
 /**
  *  Parse a Bool expresion from string.
  */
-fn parse_bool(input: &str) -> IResult<&str, Expr> {
-    map(
-        preceded(
-            multispace0, 
-            alt((
-                tag("false"),
-                tag("true"),
-            ))
-        ),
-        |v| Expr::Bool(bool::from_str(v).unwrap())
+fn parse_bool(input: Span) -> IResult<Span, SpanExpr> {
+    preceded(
+        multispace0, 
+        alt((
+            map(tag("false"), |s| (s, Expr::Bool(false))),
+            map(tag("true"), |s| (s, Expr::Bool(true))),
+        ))
     )(input)
 }
 
@@ -65,28 +112,24 @@ fn parse_bool(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Binary operand from string.
  */
-fn parse_binoperand(input: &str) -> IResult<&str, Op> {
-    map_res(
-        preceded(
-            multispace0, 
-            alt((
-                tag("+"),
-                tag("-"),
-                tag("/"),
-                tag("*"),
-                tag("%"),
-                tag("&&"),
-                tag("||"),
-                tag("!="),
-                tag("=="),
-                tag("<="),
-                tag(">="),
-                tag("<"),
-                tag(">"),
-                tag("="),
-            ))
-        ),
-        |op| Op::from_str(op)
+fn parse_binoperand(input: Span) -> IResult<Span, SpanOp> {
+    preceded(
+        multispace0, 
+        alt((
+            map(tag("+"), |s| (s, Op::Add)),
+            map(tag("-"), |s| (s, Op::Sub)),
+            map(tag("/"), |s| (s, Op::Div)),
+            map(tag("*"), |s| (s, Op::Multi)),
+            map(tag("%"), |s| (s, Op::Mod)),
+            map(tag("&&"), |s| (s, Op::And)),
+            map(tag("||"), |s| (s, Op::Or)),
+            map(tag("!="), |s| (s, Op::NotEq)),
+            map(tag("=="), |s| (s, Op::Equal)),
+            map(tag("<="), |s| (s, Op::LessEqThen)),
+            map(tag(">="), |s| (s, Op::LargEqThen)),
+            map(tag("<"), |s| (s, Op::LessThen)),
+            map(tag(">"), |s| (s, Op::LargThen)),
+        ))
     )(input)
 }
 
@@ -94,16 +137,13 @@ fn parse_binoperand(input: &str) -> IResult<&str, Op> {
 /**
  *  Parse the unary operator from string.
  */
-fn parse_unoperand(input: &str) -> IResult<&str, Op> {
-    map_res(
-        preceded(
-            multispace0, 
-            alt((
-                tag("!"),
-                tag("-"),
-            ))
-        ),
-        |op| Op::from_str(op)
+fn parse_unoperand(input: Span) -> IResult<Span, SpanOp> {
+    preceded(
+        multispace0, 
+        alt((
+            map(tag("-"), |s| (s, Op::Sub)),
+            map(tag("!"), |s| (s, Op::Not)),
+        ))
     )(input)
 }
 
@@ -111,7 +151,7 @@ fn parse_unoperand(input: &str) -> IResult<&str, Op> {
 /**
  *  Parse a Ident expresion from string.
  */
-fn parse_ident(input: &str) -> IResult<&str, Expr> {
+fn parse_ident(input: Span) -> IResult<Span, SpanExpr> {
     alt((
         map(
             tuple((
@@ -119,30 +159,33 @@ fn parse_ident(input: &str) -> IResult<&str, Expr> {
                 tag(":"),
                 parse_mytype,
             )),
-            |(i, _, t)| Expr::Assign(Box::new(Expr::Ident(i)), Box::new(Expr::Type(t)))
+            |(i, _, t)| (input, (Expr::Assign( Box::new((i, Expr::Ident(i.fragment))), Box::new((t.0, Expr::Type(t))))))
         ),
         map(
             preceded(multispace0, alpha1),
-            |v| Expr::Ident(v)
+            |s: Span| (s, Expr::Ident(s.fragment))
         ),
     ))(input)
+
+    // map(
+    //     preceded(multispace0, alpha1),
+    //     |s: Span| (s, Expr::Ident(s.fragment))
+    // )(input)
 }
 
 
 /**
  *  Parse a MyType expresion from string.
  */
-fn parse_mytype(input: &str) -> IResult<&str, MyType> {
-    map_res(preceded(
+fn parse_mytype(input: Span) -> IResult<Span, SpanMyType> {
+    preceded(
         multispace1, 
         alt((
-            tag("i32"),
-            tag("bool"),
-            tag("Str"),
-            tag("None"),
+            map(tag("i32"), |s| (s, MyType::Int32)),
+            map(tag("bool"), |s| (s, MyType::Boolean)),
+            map(tag("Str"), |s| (s, MyType::Str)),
+            map(tag("None"), |s| (s, MyType::None)),
         ))
-    ),
-    |v| MyType::from_str(v) 
     )(input)
 }
 
@@ -150,7 +193,7 @@ fn parse_mytype(input: &str) -> IResult<&str, MyType> {
 /**
  *  Parse a let expresion from string.
  */
-fn parse_let(input: &str) -> IResult<&str, Expr>{
+fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("let")), 
@@ -159,7 +202,7 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
             preceded(multispace0, parse_expr), 
             preceded(multispace0, tag(";")),
         )),
-        |(_, i, _, r, _)| Expr::Assign(Box::new(i), Box::new(r))
+        |(_, i, _, r, _)| (input, Expr::Assign(Box::new(i), Box::new(r)))
     )(input)
 }
 
@@ -167,7 +210,7 @@ fn parse_let(input: &str) -> IResult<&str, Expr>{
 /**
  *  Parse singel expresions from string.
  */
-fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
+fn parse_singel_expr(input: Span) -> IResult<Span, SpanExpr> {
     alt((
 
         map(
@@ -188,7 +231,7 @@ fn parse_singel_expr(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a string into a Box<Expr>.
  */
-pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
+pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
     alt((
         parse_func,
         parse_while,
@@ -200,14 +243,14 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
                 parse_binoperand, 
                 parse_expr
             )),
-            |(l, op, r)| Expr::BinOp(Box::new(l), op, Box::new(r)),
+            |(l, op, r)| (input, Expr::BinOp(Box::new(l), op, Box::new(r))),
         ),
         map(
             tuple((
                 preceded(multispace0, parse_unoperand), 
                 parse_expr
             )),
-            |(l, r)| Expr::UnOp(l, Box::new(r)),
+            |(l, r)| (input, Expr::UnOp(l, Box::new(r))),
         ),
         parse_func_call,
         parse_singel_expr,
@@ -218,7 +261,7 @@ pub fn parse_expr(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Body expresion from string.
  */
-fn parse_body(input: &str) -> IResult<&str, Expr> {
+fn parse_body(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("{")), 
@@ -232,7 +275,7 @@ fn parse_body(input: &str) -> IResult<&str, Expr> {
             ),
             preceded(multispace0, tag("}")),
         )),
-        |(_, v, _)| Expr::Body(v)
+        |(_, v, _)| (input, Expr::Body(v))
     )(input)
 }
 
@@ -240,7 +283,7 @@ fn parse_body(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a If expresion from string.
  */
-fn parse_if(input: &str) -> IResult<&str, Expr> {
+fn parse_if(input: Span) -> IResult<Span, SpanExpr> {
     alt((
         map(
             tuple((
@@ -250,7 +293,7 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
                 preceded(multispace0, tag("else")),
                 parse_body,
             )),
-            |(_, i,lb, _, rb)| Expr::If(Box::new(i), Box::new(lb), Box::new(rb))
+            |(_, i,lb, _, rb)| (input, Expr::If(Box::new(i), Box::new(lb), Box::new(rb)))
         ),
         map(
             tuple((
@@ -258,7 +301,7 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
                 parse_expr,
                 parse_body,
             )),
-            |(_, i, b)| Expr::If(Box::new(i), Box::new(b), Box::new(Expr::Empty))
+            |(_, i, b)| (input, Expr::If(Box::new(i), Box::new(b), Box::new((input ,Expr::Empty))))
         ),
     ))(input)
 }
@@ -267,14 +310,14 @@ fn parse_if(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a While expresion from string.
  */
-fn parse_while(input: &str) -> IResult<&str, Expr> {
+fn parse_while(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("while")), 
             parse_expr,
             parse_body,
         )),
-        |(_, i, b)| Expr::While(Box::new(i), Box::new(b))
+        |(_, i, b)| (input, Expr::While(Box::new(i), Box::new(b)))
     )(input)
 }
 
@@ -282,7 +325,7 @@ fn parse_while(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Func expresion from string.
  */
-fn parse_func(input: &str) -> IResult<&str, Expr> {
+fn parse_func(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("fn")),
@@ -292,7 +335,7 @@ fn parse_func(input: &str) -> IResult<&str, Expr> {
             parse_mytype,
             parse_body,
         )),
-        |(_, i, p, _, t, b)| Expr::Func(Box::new(i), Box::new(p), t, Box::new(b))
+        |(_, i, p, _, t, b)| (input, Expr::Func(Box::new(i), Box::new(p), t, Box::new(b)))
     )(input)
 }
 
@@ -300,7 +343,7 @@ fn parse_func(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Parameter expresion from string.
  */
-fn parse_param(input: &str) -> IResult<&str, Expr> {
+fn parse_param(input: Span) -> IResult<Span, SpanExpr> {
     alt ((
         map(
             tuple((
@@ -308,7 +351,7 @@ fn parse_param(input: &str) -> IResult<&str, Expr> {
                 separated_list(tag(","), parse_ident),
                 preceded(multispace0, tag(")")), 
             )),
-            |(_, v, _)| Expr::Param(v)
+            |(_, v, _)| (input, Expr::Param(v))
         ),
         map(
             tuple((
@@ -316,7 +359,7 @@ fn parse_param(input: &str) -> IResult<&str, Expr> {
                 separated_list(tag(","), parse_expr),
                 preceded(multispace0, tag(")")), 
             )),
-            |(_, v, _)| Expr::Param(v)
+            |(_, v, _)| (input, Expr::Param(v))
         ),
     ))(input)
 }
@@ -325,7 +368,7 @@ fn parse_param(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Functions into expresions from string.
  */
-pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
+pub fn parse_funcs(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,  
             fold_many0(
@@ -336,7 +379,7 @@ pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
                     acc
                 }
             )),
-        |v| Expr::Funcs(v)
+        |v| (input, Expr::Funcs(v))
     )(input)
 }
 
@@ -344,7 +387,7 @@ pub fn parse_funcs(input: &str) -> IResult<&str, Expr> {
 /**
  *  Parse a Function call into expresion from string.
  */
-pub fn parse_func_call(input: &str) -> IResult<&str, Expr> {
+fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
     alt ((
         map(
             preceded(multispace0,
@@ -354,7 +397,7 @@ pub fn parse_func_call(input: &str) -> IResult<&str, Expr> {
                     tag(";"),
                 )),
             ),
-            |(i, p, _)| Expr::FuncCall(Box::new(i), Box::new(p))
+            |(i, p, _)| (input, Expr::FuncCall(Box::new(i), Box::new(p)))
         ),
         map(
             preceded(multispace0,
@@ -363,7 +406,15 @@ pub fn parse_func_call(input: &str) -> IResult<&str, Expr> {
                     parse_param,
                 )),
             ),
-            |(i, p)| Expr::FuncCall(Box::new(i), Box::new(p))
+            |(i, p)| (input, Expr::FuncCall(Box::new(i), Box::new(p)))
         ),
     ))(input)
+}
+
+/**
+ *  Parse a Function call into expresion from string.
+ */
+pub fn parse<'a>(input: &'a str) -> IResult<Span, SpanExpr> {
+    let i_span = Span::new(input);
+    parse_funcs(i_span)
 }
