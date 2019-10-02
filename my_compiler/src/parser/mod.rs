@@ -1,10 +1,5 @@
 extern crate nom;
 
-// use std::str::FromStr;
-
-pub mod syntaxerror;
-// use syntaxerror::{Result, SyntaxError};
-
 pub mod op;
 use op::Op;
 
@@ -24,7 +19,6 @@ use nom::{
     character::complete::{ digit1, alpha1, multispace0, multispace1},
     sequence::{preceded, tuple},
     bytes::complete::tag,
-    combinator::map_res,
     multi::fold_many0,
     multi::separated_list,
     error,
@@ -166,11 +160,6 @@ fn parse_ident(input: Span) -> IResult<Span, SpanExpr> {
             |s: Span| (s, Expr::Ident(s.fragment))
         ),
     ))(input)
-
-    // map(
-    //     preceded(multispace0, alpha1),
-    //     |s: Span| (s, Expr::Ident(s.fragment))
-    // )(input)
 }
 
 
@@ -212,19 +201,26 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
  */
 fn parse_singel_expr(input: Span) -> IResult<Span, SpanExpr> {
     alt((
-
-        map(
-            tuple((
-                preceded(multispace0, tag("(")),
-                parse_expr,
-                preceded(multispace0, tag(")")),
-            )),
-            |(_, e, _)| e
-        ),
+        parse_parentheses,
         parse_i32,
         parse_bool,
         parse_ident,
     ))(input)
+}
+
+
+/**
+ *  Parse parentheses form string.
+ */
+fn parse_parentheses(input: Span) -> IResult<Span, SpanExpr> {
+    map(
+        tuple((
+            preceded(multispace0, tag("(")),
+            parse_expr,
+            preceded(multispace0, tag(")")),
+        )),
+        |(_, e, _)| e
+    )(input)
 }
 
 

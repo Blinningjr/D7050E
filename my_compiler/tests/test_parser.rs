@@ -5,10 +5,11 @@
  */
 #[path = "../src/parser/mod.rs"]
 mod parser;
-#[allow(unused_imports)]
-use crate::parser::{parse_expr, parse_funcs};
-
-
+use crate::parser::{
+    parse_expr, 
+    parse,
+    Span,
+    };
 /**
  *  Import enum Expr.
  */
@@ -29,7 +30,7 @@ use crate::parser::expr::Expr::{
     Param,
     Funcs,
 };
-use crate::parser::expr::Expr;
+// // use crate::parser::expr::Expr;
 
 
 /**
@@ -65,38 +66,36 @@ use crate::parser::mytype::MyType::{
     None,
 };
 
-use crate::parser::syntaxerror::{SyntaxError, Result};
 
-
-/**
- *  Calculates the value of an math expression.
- *  Needed for tests.
- */
-pub fn math_expr_eval(e: Expr) -> Result<i32> {
-    match e {
-        Num(i) => Ok(i),
-        BinOp(l, op, r) => {
-            let left_value = math_expr_eval(*l).unwrap();
-            let right_value = math_expr_eval(*r).unwrap();
-            match op {
-                Add => Ok(left_value + right_value),
-                Sub => Ok(left_value - right_value),
-                Div => Ok(left_value / right_value),
-                Multi => Ok(left_value * right_value),
-                Mod => Ok(left_value % right_value),
-                _ => Err(SyntaxError),
-            }
-        }
-        UnOp(op, r) => {
-            let right_value = math_expr_eval(*r).unwrap();
-            match op {
-                Sub => Ok(-right_value),
-                _ => Err(SyntaxError),
-            }
-        }
-        _ => Err(SyntaxError),
-    }
-}
+// /**
+//  *  Calculates the value of an math expression.
+//  *  Needed for tests.
+//  */
+// pub fn math_expr_eval(e: Expr) -> Result<i32> {
+//     match e {
+//         Num(i) => Ok(i),
+//         BinOp(l, op, r) => {
+//             let left_value = math_expr_eval(*l).unwrap();
+//             let right_value = math_expr_eval(*r).unwrap();
+//             match op {
+//                 Add => Ok(left_value + right_value),
+//                 Sub => Ok(left_value - right_value),
+//                 Div => Ok(left_value / right_value),
+//                 Multi => Ok(left_value * right_value),
+//                 Mod => Ok(left_value % right_value),
+//                 _ => Err(SyntaxError),
+//             }
+//         }
+//         UnOp(op, r) => {
+//             let right_value = math_expr_eval(*r).unwrap();
+//             match op {
+//                 Sub => Ok(-right_value),
+//                 _ => Err(SyntaxError),
+//             }
+//         }
+//         _ => Err(SyntaxError),
+//     }
+// }
 
 
 /**
@@ -104,204 +103,198 @@ pub fn math_expr_eval(e: Expr) -> Result<i32> {
  */
 #[test]
 fn test_parse_int() {
-    assert_eq!(parse_expr("2"), Ok(("", Num(2))));
-    assert!(parse_expr("1a").is_ok());
+    let test1 = parse_expr(Span::new(" 2"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("1a"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "a");
+
+    let test3 = parse_expr(Span::new("931235"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
 }
 
 
 /**
- *  Test parsing addition.
- */
-#[test]
-fn test_parse_add() {
-    let mut expec = Ok(("", BinOp(Box::new(Num(4)), Add, Box::new(Num(2)))));
-    let mut expr = parse_expr("4 + 2");
-    assert_eq!(expr, expec);
-    assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 6);
-
-    expec = Ok(("", BinOp(Box::new(Ident("a")), Add, Box::new(Ident("b")))));
-    expr = parse_expr(" a + b");
-    assert_eq!(expr, expec);
-}
-
-
-/**
- *  Test parsing subtraction.
- */
-#[test]
-fn test_parse_sub() {
-    let test_val = "4 - 2";
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Sub, Box::new(Num(2)))));
-    let expr = parse_expr(test_val);
-    
-    assert_eq!(expr, expec);
-    assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2);
-    assert_eq!(parse_expr(" -2"), Ok(("", UnOp(Sub, Box::new(Num(2))))));
-    assert_eq!(math_expr_eval(parse_expr(" -2").unwrap().1).unwrap(), -2);
-}
-
-
-/**
- *  Test parsing divition.
- */
-#[test]
-fn test_parse_div() {
-    let test_val = "4 / 2";
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Div, Box::new(Num(2)))));
-    let expr = parse_expr(test_val);
-
-    assert_eq!(expr, expec);
-    assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 2);
-}
-
-
-/**
- *  Test parsing multiplication.
- */
-#[test]
-fn test_parse_multi() {
-    let test_val = "4 * 2";
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Multi, Box::new(Num(2)))));
-    let expr = parse_expr(test_val);
-
-    assert_eq!(expr, expec);
-    assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 8);
-}
-
-
-/**
- *  Test parsing modulus.
- */
-#[test]
-fn test_parse_mod() {
-    let test_val = "4 % 2";
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Mod, Box::new(Num(2)))));
-    let expr = parse_expr(test_val);
-
-    assert_eq!(expr, expec);
-    assert_eq!(math_expr_eval(expr.unwrap().1).unwrap(), 0);
-}
-
-
-/**
- *  Test parsing and.
- */
-#[test]
-fn test_parse_and() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), And, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 && 2"), expec);
-}
-
-
-/**
- *  Test parsing or.
- */
-#[test]
-fn test_parse_or() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Or, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 || 2"), expec);
-}
-
-
-/**
- *  Test parsing not.
- */
-#[test]
-fn test_parse_not() {
-    let expec = Ok(("", UnOp( Not, Box::new(Num(2)))));
-    assert_eq!(parse_expr(" ! 2"), expec);
-}
-
-
-/**
- *  Test parsing equal.
- */
-#[test]
-fn test_parse_equal() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), Equal, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 == 2"), expec);
-}
-
-
-/**
- *  Test parsing not equal.
- */
-#[test]
-fn test_parse_not_eq() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), NotEq, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 != 2"), expec);
-}
-
-
-/**
- *  Test parsing lesser then.
- */
-#[test]
-fn test_parse_less_then() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), LessThen, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 < 2"), expec);
-}
-
-
-/**
- *  Test parsing larger then.
- */
-#[test]
-fn test_parse_larg_then() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), LargThen, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 > 2"), expec);
-}
-
-
-/**
- *  Test parsing lesser equal then.
- */
-#[test]
-fn test_parse_less_eq_then() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), LessEqThen, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 <= 2"), expec);
-}
-
-
-/**
- *  Test parsing larger equal then.
- */
-#[test]
-fn test_parse_larg_eq_then() {
-    let expec = Ok(("", BinOp(Box::new(Num(4)), LargEqThen, Box::new(Num(2)))));
-    assert_eq!(parse_expr("4 >= 2"), expec);
-}
-
-
-/**
- *  Test parsing singel boolean.
+ *  Test parsing singel Bool.
  */
 #[test]
 fn test_parse_bool() {
-    assert_eq!(parse_expr(" false"), Ok(("", Bool(false))));
-    assert_eq!(parse_expr("false"), Ok(("", Bool(false))));
-    assert_eq!(parse_expr(" true"), Ok(("", Bool(true))));
-    assert_eq!(parse_expr("true"), Ok(("", Bool(true))));
-    assert_eq!(parse_expr("true == false"), Ok(("", BinOp(Box::new(Bool(true)), Equal, Box::new(Bool(false))))));
-    assert_eq!(parse_expr(" true  2"), Ok(("  2", Bool(true))));
-    assert!(parse_expr(" true  2").is_ok());
+    let test1 = parse_expr(Span::new(" true"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("false"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
 }
 
 
 /**
- *  Test parsing let statments.
+ *  Test parsing singel ident.
  */
 #[test]
+fn test_parse_ident() {
+    let test1 = parse_expr(Span::new(" apa"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("koskos"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new("koskos: i32"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+
+    let test5 = parse_expr(Span::new("apa: bool"));
+    assert!(test5.is_ok());
+    assert_eq!((test5.unwrap().0).fragment, "");
+
+    let test6 = parse_expr(Span::new("apa: None"));
+    assert!(test6.is_ok());
+    assert_eq!((test6.unwrap().0).fragment, "");
+
+    let test7 = parse_expr(Span::new("koskos: Str"));
+    assert!(test7.is_ok());
+    assert_eq!((test7.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing parentheses.
+ */
+#[test]
+fn test_parse_parentheses() {
+    let test1 = parse_expr(Span::new(" (true)"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("(false)"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new(" (1 +2)"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new("(10 - 2)* 2"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing function calls.
+ */
+#[test]
+fn test_parse_func_call() {
+    let test1 = parse_expr(Span::new(" apa(50)"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new(" test(tjo, 20, true)"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing unary operations.
+ */
+#[test]
+fn test_parse_unop() {
+    let test1 = parse_expr(Span::new(" -20"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new(" !true"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing binary operations.
+ */
+#[test]
+fn test_parse_binop() {
+    let test1 = parse_expr(Span::new("4 + 2"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("1-20"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("931235 /a"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new(" a* b"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+
+    let test5 = parse_expr(Span::new("(10 + 2) %5"));
+    assert!(test5.is_ok());
+    assert_eq!((test5.unwrap().0).fragment, "");
+
+    let test6 = parse_expr(Span::new("true && false"));
+    assert!(test6.is_ok());
+    assert_eq!((test6.unwrap().0).fragment, "");
+
+    let test7 = parse_expr(Span::new("true || false"));
+    assert!(test7.is_ok());
+    assert_eq!((test7.unwrap().0).fragment, "");
+
+    let test8 = parse_expr(Span::new(" (10 + 2) == 12"));
+    assert!(test8.is_ok());
+    assert_eq!((test8.unwrap().0).fragment, "");
+
+    let test9 = parse_expr(Span::new(" 10 != 12"));
+    assert!(test9.is_ok());
+    assert_eq!((test9.unwrap().0).fragment, "");
+
+    let test10 = parse_expr(Span::new(" (10 + 2) < 12 * 2"));
+    assert!(test10.is_ok());
+    assert_eq!((test10.unwrap().0).fragment, "");
+
+    let test11 = parse_expr(Span::new(" (10 + 2) > 12 * 2"));
+    assert!(test11.is_ok());
+    assert_eq!((test11.unwrap().0).fragment, "");
+
+    let test12 = parse_expr(Span::new(" 4 <= -2"));
+    assert!(test12.is_ok());
+    assert_eq!((test12.unwrap().0).fragment, "");
+
+    let test13 = parse_expr(Span::new(" 4 >= -2"));
+    assert!(test13.is_ok());
+    assert_eq!((test13.unwrap().0).fragment, "");
+}
+
+
+// /**
+//  *  Test parsing let statments.
+//  */
+#[test]
 fn test_parse_let() {
-    let expec = Ok(("", Assign(Box::new(Ident("apa")), Box::new(Num(20)))));
-    assert_eq!(parse_expr(" let apa = 20;"), expec);
+    let test1 = parse_expr(Span::new(" let apa = 20;"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
 
-    let expec = Ok((" let apa = 20;", BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))));
-    assert_eq!(parse_expr("1 + 2 let apa = 20;"), expec);
+    let test3 = parse_expr(Span::new("let apa = true;"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
 
-    assert!(parse_expr("let apa = true;").is_ok());
-    assert!(parse_expr("let apa = false;").is_ok());
-    assert!(parse_expr("let apa=20 + 20- 2 * 20;").is_ok());
+    let test4 = parse_expr(Span::new("let apa = false;"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+
+    let test5 = parse_expr(Span::new("let apa=20 + 20- 2 * 20;"));
+    assert!(test5.is_ok());
+    assert_eq!((test5.unwrap().0).fragment, "");
 }
 
 
@@ -310,15 +303,13 @@ fn test_parse_let() {
  */
 #[test]
 fn test_parse_if() {
-    let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), 
-    Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), 
-    Box::new(Empty))));
-    assert_eq!(parse_expr("if false == true {1+2}"), expec);
+    let test1 = parse_expr(Span::new("if false == true {1+2}"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
 
-    let expec = Ok(("", If(Box::new(BinOp(Box::new(Bool(false)), Equal, Box::new(Bool(true)))), 
-        Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())), 
-        Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
-    assert_eq!(parse_expr("if false == true {1+2} else {1+2}"), expec);
+    let test2 = parse_expr(Span::new("if false == true {1+2} else {1+2}"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
 }
 
 
@@ -327,9 +318,13 @@ fn test_parse_if() {
  */
 #[test]
 fn test_parse_while() {
-    let expec = Ok(("", While(Box::new(Bool(true)), 
-        Box::new(Body([BinOp(Box::new(Num(1)), Add, Box::new(Num(2)))].to_vec())))));
-    assert_eq!(parse_expr("while true {1+2}"), expec);
+    let test1 = parse_expr(Span::new("while true {1+2}"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("while i < 10 {i + 1}"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
 }
 
 
@@ -338,36 +333,41 @@ fn test_parse_while() {
  */
 #[test]
 fn test_parse_func() {
-    let expec = Ok(("", 
-        Funcs([Func(Box::new(Ident("apa")), 
-        Box::new(Param([Ident("input")].to_vec())), 
-        Boolean, 
-        Box::new(Body([Assign(Box::new(Ident("apa")), 
-        Box::new(Num(10)))].to_vec())))].to_vec())));
-    assert_eq!(parse_funcs("fn apa(input) -> bool { let apa = 10;}"), expec);
+    let test1 = parse_expr(Span::new("fn apa(input) -> bool { let apa = 10;}"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
 
-    let expec = Ok(("", 
-        Funcs([Func(Box::new(Ident("apa")), 
-        Box::new(Param([Assign(Box::new(Ident("input")), Box::new(Type(Int32)))].to_vec())), 
-        None, 
-        Box::new(Body([Assign(Box::new(Ident("a")), Box::new(Num(10))), 
-            Assign(Box::new(Ident("var")), Box::new(Bool(true)))].to_vec())))].to_vec())));
-    assert_eq!(parse_funcs("fn apa(input: i32) -> None { let a = 10; let var = true;}"), expec);
+    let test2 = parse_expr(Span::new("fn apa(input: i32) -> None { let a = 10; let var = true;}"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
 
-    let expec = Ok(("", 
-        Funcs([Func(Box::new(Ident("apor")), 
-        Box::new(Param([Assign(Box::new(Ident("input")), Box::new(Type(Str))), Ident("test")].to_vec())), 
-        Boolean, 
-        Box::new(Body([Assign(Box::new(Ident("apa")), Box::new(Num(10)))].to_vec())))].to_vec())));
-    assert_eq!(parse_funcs("fn apor(input: Str, test) -> bool { let apa = 10;}"), expec);
+    let test3 = parse_expr(Span::new("fn apor(input: Str, test) -> bool { let apa = 10;}"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
 }
 
 
 /**
- *  Test multiple math expretions.
+ *  Test parsing Funcs statments.
  */
 #[test]
-fn test_math_expr() {
-    assert_eq!(math_expr_eval(parse_expr(" 10 * (2+3)").unwrap().1).unwrap(), 50);
-    assert_eq!(math_expr_eval(parse_expr(" 10 / (2-4)").unwrap().1).unwrap(), -5);
+fn test_parse_funcs() {
+    let test1 = parse("
+        fn tio(i: i32) -> i32 {
+            let a = 200; 
+            if i < 1000 {
+                tio(i + 1)
+                } 
+            else{
+                i
+            }
+        }
+
+        fn main() -> None {
+            let a = 100; 
+            tio(1);
+        }"
+    );
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
 }

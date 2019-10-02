@@ -20,8 +20,8 @@ fn main() {
         .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
-    // let f = parse(" 1 + 2 ");
-    let f = parse(contents.as_str()).unwrap();
-    println!("{:#?}" , f.1); // print parsed ast.
+    let f = parse("2");
+    // let f = parse(contents.as_str()).unwrap();
+    println!("{:#?}" , f); // print parsed ast.
     // println!("{:?} : {:#?}" , f.0, interp_ast(f.1)); // Print interp and env.
 }
