@@ -183,16 +183,27 @@ fn parse_mytype(input: Span) -> IResult<Span, SpanMyType> {
  *  Parse a let expresion from string.
  */
 fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
-    map(
-        tuple((
-            preceded(multispace0, tag("let")), 
-            parse_ident, 
-            preceded(multispace0, tag("=")), 
-            preceded(multispace0, parse_expr), 
-            preceded(multispace0, tag(";")),
-        )),
-        |(_, i, _, r, _)| (input, Expr::Assign(Box::new(i), Box::new(r)))
-    )(input)
+    alt ((
+        map(
+            tuple((
+                preceded(multispace0, tag("let")), 
+                parse_ident, 
+                preceded(multispace0, tag("=")), 
+                preceded(multispace0, parse_expr), 
+                preceded(multispace0, tag(";")),
+            )),
+            |(_, i, _, r, _)| (input, Expr::Assign(Box::new(i), Box::new(r)))
+        ),
+        map(
+            tuple((
+                parse_ident, 
+                preceded(multispace0, tag("=")), 
+                preceded(multispace0, parse_expr), 
+                preceded(multispace0, tag(";")),
+            )),
+            |(i, _, r, _)| (input, Expr::UpdateVar(Box::new(i), Box::new(r)))
+        ),
+    ))(input)
 }
 
 
