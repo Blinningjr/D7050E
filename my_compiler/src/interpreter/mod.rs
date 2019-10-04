@@ -320,7 +320,15 @@ fn interp_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a
                         Expr::Param(v) => {
                             let (e, nenv) = env.load_func(s)?;
                             match e {
-                                Expr::Func(_, _, _, _) => interp_func(e, v, &mut nenv.clone()),
+                                Expr::Func(_, _, _, _) => {
+                                    let res = interp_func(e, v, &mut nenv.clone())?;
+                                    match res.1 {
+                                        Val::ReturnBool(b) => Ok((res.0, Val::Bool(b))),
+                                        Val::ReturnNum(v) => Ok((res.0, Val::Num(v))),
+                                        Val::ReturnEmpty => Ok((res.0, Val::Empty)),
+                                        _ => Ok(res),
+                                    }
+                                },
                                 _ => Err(InterpError),
                             }
                         },

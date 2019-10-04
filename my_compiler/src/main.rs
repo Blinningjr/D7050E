@@ -22,5 +22,6 @@ fn main() {
     // let f = parse("apa");
     let f = parse(contents.as_str()).unwrap();
     // println!("Output = {:#?}" , f); // print parsed ast.
-    println!("{:#?} : {:#?}" , f.0, interp_ast(f.1)); // Print interp and env.
+    // println!("{:#?} : {:#?}" , f.0, interp_ast(f.1)); // Print interp and env.
+     interp_ast(f.1);
 }
