@@ -45,7 +45,6 @@ impl<'a> error::ParseError<Span<'a>> for Error<'a> {
 #[derive(Debug)]
 pub enum ErrorKind {
     ParseIntError(std::num::ParseIntError),
-    ParseBooleanError,
     Nom(error::ErrorKind),
 }
 
