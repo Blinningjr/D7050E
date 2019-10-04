@@ -51,8 +51,8 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::If(_, _, _) => interp_if(e, env),
         Expr::While(_, _) => interp_while(e, env),
         Expr::FuncCall(_, _) => interp_func_call(e, env),
-        Expr::Func(i, _, _, _) => store_func_in_env(e, *i, env),
-        Expr::Funcs(v) => interp_funcs(v, env),
+        Expr::Func(_, _, _, _) => store_func_in_env(e, env),
+        Expr::Funcs(_) => interp_funcs(e, env),
         _ => Err(InterpError),
     }
 }
@@ -367,9 +367,14 @@ fn interp_func<'a>(e: Expr<'a>, pv: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Res
 /** 
  *  Store function in env.
 */
-fn store_func_in_env<'a>(f: SpanExpr<'a>, i: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
-    match i.1 {
-        Expr::Ident(s) => Ok((f.clone(), env.store_func(s, f.1)?)),
+fn store_func_in_env<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+     match (e.1).clone() {
+        Expr::Func(i, _, _, _) => {
+             match i.1 {
+                Expr::Ident(s) => Ok((e.clone(), env.store_func(s, e.1)?)),
+                _ => Err(InterpError),
+            }
+        },
         _ => Err(InterpError),
     }
 }
@@ -377,17 +382,22 @@ fn store_func_in_env<'a>(f: SpanExpr<'a>, i: SpanExpr<'a>, env: &mut Env<'a>) ->
 /** 
  *  Interprets function in ast and store them in env.
 */
-fn interp_funcs<'a>(funcs: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
-    for func in funcs {
-        match (func.1).clone() {
-            Expr::Func(i, _, _, _) => {store_func_in_env(func, *i, env)?; ()},
-            _ => (),
-        };
-    }
-    
-    let (e, mut nenv) = env.load_func(&"main")?;
-    match e {
-        Expr::Func(_, _, _, _) => interp_func(e, Vec::new(), &mut nenv),
-        _ =>  Err(InterpError),
+fn interp_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+    match (e.1).clone() {
+        Expr::Funcs(funcs) => {
+            for func in funcs {
+                match (func.1).clone() {
+                    Expr::Func(_, _, _, _) => {store_func_in_env(func, env)?; ()},
+                    _ => (),
+                };
+            }
+            
+            let (e, mut nenv) = env.load_func(&"main")?;
+            match e {
+                Expr::Func(_, _, _, _) => interp_func(e, Vec::new(), &mut nenv),
+                _ =>  Err(InterpError),
+            }
+        },
+        _ => Err(InterpError),
     }
 }
