@@ -234,8 +234,24 @@ fn interp_body<'a>(expr: SpanExpr<'a>, es: Vec<SpanExpr<'a>>, env: &mut Env<'a>)
     let mut res = Ok((expr, Val::Empty));
     for e in es {
         match e.1 {
-            Expr::Return(v) => return interp_expr(*v, env),
-            _ => res = interp_expr(e, env),
+            Expr::Return(v) => {
+                let val = interp_expr(*v, env)?;
+                return match val.1 {
+                    Val::Num(v) => Ok((val.0, Val::ReturnNum(v))),
+                    Val::Bool(b) => Ok((val.0, Val::ReturnBool(b))),
+                    Val::Empty => Ok((val.0, Val::ReturnEmpty)),
+                    _ => Ok(val),
+                };
+            },
+            _ => {
+                res = interp_expr(e, env);
+                match res.clone()?.1 {
+                    Val::ReturnBool(_) => return res,
+                    Val::ReturnNum(_) => return res,
+                    Val::ReturnEmpty => return res,
+                    _ => (),
+                };
+            },
         }
     }
     return res;
