@@ -1,5 +1,4 @@
 fn tio(i: i32) -> i32 {
-    let a = 200; 
     if i < 10 {
         tio(i + 1)
         } 

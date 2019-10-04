@@ -7,7 +7,7 @@ use super::interperror::{InterpError, Result};
 use crate::parser::expr::Expr;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum NextEnv<'a> {
+pub enum FormerEnv<'a> {
     Empty,
     Next(Box<Env<'a>>),
 }
@@ -19,45 +19,37 @@ pub enum NextEnv<'a> {
 pub struct Env<'a> {
     mem_var: HashMap<String, Val>,
     mem_func: HashMap<String, Expr<'a>>,
-    mem_next: NextEnv<'a>,
+    mem_former_env: FormerEnv<'a>,
 }
 impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         Env {
             mem_var: HashMap::new(),
             mem_func: HashMap::new(),
-            mem_next: NextEnv::Empty,
+            mem_former_env: FormerEnv::Empty,
         }
     }
-    pub fn store_var(&mut self, ident: String, val: Val) -> std::option::Option<Val> {
-        match self.mem_var.get(&ident) {
-            Some(_) => self.mem_var.insert(ident, val),
-            _ => {
-                match &mut self.mem_next {
-                    NextEnv::Empty => self.mem_var.insert(ident, val),
-                    NextEnv::Next(e) => e.store_var(ident, val),
-                }
-            },
+    pub fn store_var(&mut self, ident: &'a str, val: Val) -> Result<Val> {
+        let res = self.load_var(ident);
+        match res {
+            Ok(_) => Err(InterpError),
+            Err(_) =>  {self.mem_var.insert(ident.to_string(), val.clone()); Ok(val.clone())},
         }
     }
-    pub fn store_func(&mut self, ident: String, func: Expr<'a>) -> std::option::Option<Expr<'a>> {
-        match self.mem_func.get(&ident) {
-            Some(_) => self.mem_func.insert(ident, func),
-            _ => {
-                match &mut self.mem_next {
-                    NextEnv::Empty => self.mem_func.insert(ident, func),
-                    NextEnv::Next(e) => e.store_func(ident, func),
-                }
-            },
+    pub fn store_func(&mut self, ident:  &'a str, func: Expr<'a>) -> Result<Val> {
+        let res = self.load_func(ident);
+        match res {
+            Ok(_) => Err(InterpError),
+            Err(_) =>  {self.mem_func.insert(ident.to_string(), func); Ok(Val::Empty)},
         }
     }
     pub fn load_var(&mut self, key: &'a str) -> Result<Val>{
         match self.mem_var.get(key) {
             Some(val) => Ok(val.clone()),
             _ => {
-                match &mut self.mem_next {
-                    NextEnv::Empty => Err(InterpError),
-                    NextEnv::Next(e) => e.load_var(key),
+                match &mut self.mem_former_env {
+                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Next(e) => e.load_var(key),
                 }
             },
         }
@@ -65,14 +57,28 @@ impl<'a> Env<'a> {
     pub fn load_func(&mut self, key: &'a str) -> Result<(Expr, Env<'a>)>{
         match self.mem_func.get(key) {
             Some(e) => {
-                let env = self.clone();
-                self.mem_next = NextEnv::Empty;
-                Ok((e.clone(), env))
+                Ok((e.clone(), self.crate_next_env()))
             },
             _ => {
-                match &mut self.mem_next {
-                    NextEnv::Empty => Err(InterpError),
-                    NextEnv::Next(e) => e.load_func(key),
+                match &mut self.mem_former_env {
+                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Next(e) => e.load_func(key),
+                }
+            },
+        }
+    }
+    pub fn crate_next_env(&mut self) ->  Env<'a> {
+        let mut env = Env::new();
+        env.mem_former_env = FormerEnv::Next(Box::new(self.clone()));
+        env
+    }
+    pub fn update_var(&mut self, ident: String, val: Val) -> Result<Val> {
+        match self.mem_var.get(&ident) {
+            Some(_) => {self.mem_var.insert(ident, val.clone()); Ok(val.clone())},
+            _ => {
+                match &mut self.mem_former_env {
+                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Next(e) => e.update_var(ident, val),
                 }
             },
         }
