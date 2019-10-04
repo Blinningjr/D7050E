@@ -6,7 +6,6 @@ use val::Val;
 
 pub mod env;
 use env::Env;
-use env::FormerEnv;
 
 
 /**
@@ -47,13 +46,19 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::UnOp(_, _) => interp_unop(e, env),
         Expr::BinOp(_, _, _) => interp_binop(e, env),
         Expr::Assign(_, _) => interp_assign(e, env),
-        Expr::Ident(s) => Ok((e, env.load_var(s)?)),
+        Expr::Ident(s) => {
+            let t = env.load_var(s);
+            if t.is_err() {
+                panic!("{:?} : {:#?}", s, e);
+            }
+            Ok((e, t?))
+        },
         Expr::If(_, _, _) => interp_if(e, env),
         Expr::While(_, _) => interp_while(e, env),
         Expr::FuncCall(_, _) => interp_func_call(e, env),
         Expr::Func(_, _, _, _) => store_func_in_env(e, env),
         Expr::Funcs(_) => interp_funcs(e, env),
-        _ => Err(InterpError),
+        _ => panic!("interp_expr"),
     }
 }
 
@@ -69,20 +74,20 @@ fn interp_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     let res = interp_expr(*rv.clone(), env)?;
                     match res.1 {
                         Val::Num(i) => Ok((e, Val::Num(-i))),
-                        _ => Err(InterpError),
+                        _ => panic!("interp_unop"),
                     }
                 }
                 Op::Not => {
                     let res = interp_expr(*rv.clone(), env)?;
                     match res.1 {
                         Val::Bool(b) => Ok((e, Val::Bool(!b))),
-                        _ => Err(InterpError),
+                        _ => panic!("interp_unop"),
                     }
                 }
-                _ => Err(InterpError),
+                _ => panic!("interp_unop"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_unop"),
     }
 }
 
@@ -161,10 +166,10 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     !=
                     get_bool(rr)?
                 ))),
-                _ => Err(InterpError),
+                _ => panic!("interp_binop"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_binop"),
     }
 }
 
@@ -175,7 +180,7 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 fn get_int(v: Val) -> Result<i32> {
     match v {
         Val::Num(i) => Ok(i),
-        _ => Err(InterpError),
+        _ => panic!("get_int"),
     }
 }
 
@@ -186,7 +191,7 @@ fn get_int(v: Val) -> Result<i32> {
 fn get_bool(v: Val) -> Result<bool> {
     match v {
         Val::Bool(b) => Ok(b),
-        _ => Err(InterpError),
+        _ => panic!("get_bool"),
     }
 }
 
@@ -197,7 +202,7 @@ fn get_bool(v: Val) -> Result<bool> {
 fn interp_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Assign(ident, value) => assign_help(*ident, *value, env),
-        _ => Err(InterpError),
+        _ => panic!("interp_assign"),
     }
 }
 
@@ -214,7 +219,7 @@ fn assign_help<'a>(ident: SpanExpr<'a>, value: SpanExpr<'a>, env: &mut Env<'a>) 
                     env.store_var(s, (val.1).clone())?;
                     return Ok(val);
                 },
-                _ => Err(InterpError),
+                _ => panic!("assign_help"),
             }
         },
         Expr::Ident(s) => {
@@ -222,7 +227,7 @@ fn assign_help<'a>(ident: SpanExpr<'a>, value: SpanExpr<'a>, env: &mut Env<'a>) 
             env.store_var(s, (val.1).clone())?;
             return Ok(val);
         },
-        _ => Err(InterpError),
+        _ => panic!("assign_help"),
     }
 }
 
@@ -237,17 +242,17 @@ fn interp_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             if get_bool(interp_expr(*b, env)?.1)? {
                 match lb.1.clone() {
                     Expr::Body(_) => interp_body(*lb, &mut nenv),
-                    _ => Err(InterpError),
+                    _ => panic!("interp_if"),
                 }
             } else {
                 match rb.1.clone() {
                     Expr::Body(_) => interp_body(*rb, &mut nenv),
                     Expr::Empty => Ok((e, Val::Empty)),
-                    _ => Err(InterpError),
+                    _ => panic!("interp_if"),
                 }
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_if"),
     }
 }
 
@@ -283,7 +288,7 @@ fn interp_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             }
             return res;
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_body"),
     }
 }
 
@@ -303,7 +308,7 @@ fn interp_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             }
             return res;
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_while"),
     }
 }
 
@@ -329,16 +334,16 @@ fn interp_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a
                                         _ => Ok(res),
                                     }
                                 },
-                                _ => Err(InterpError),
+                                _ => panic!("interp_func_call"),
                             }
                         },
-                        _ => Err(InterpError),
+                        _ => panic!("interp_func_call"),
                     }
                 }
-                _ => Err(InterpError),
+                _ => panic!("interp_func_call"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_func_call"),
     }
 }
 
@@ -365,10 +370,10 @@ fn interp_func<'a>(e: Expr<'a>, pv: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Res
             }
             match b.1.clone() {
                 Expr::Body(_) => interp_body(*b, env),
-                _ => Err(InterpError),
+                _ => panic!("interp_func"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_func"),
     }
 }
 
@@ -380,10 +385,10 @@ fn store_func_in_env<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'
         Expr::Func(i, _, _, _) => {
              match i.1 {
                 Expr::Ident(s) => Ok((e.clone(), env.store_func(s, e.1)?)),
-                _ => Err(InterpError),
+                _ => panic!("store_func_in_env"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("store_func_in_env"),
     }
 }
 
@@ -403,9 +408,9 @@ fn interp_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             let (e, mut nenv) = env.load_func(&"main")?;
             match e {
                 Expr::Func(_, _, _, _) => interp_func(e, Vec::new(), &mut nenv),
-                _ =>  Err(InterpError),
+                _ =>  panic!("interp_funcs"),
             }
         },
-        _ => Err(InterpError),
+        _ => panic!("interp_funcs"),
     }
 }

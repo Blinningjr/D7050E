@@ -32,14 +32,14 @@ impl<'a> Env<'a> {
     pub fn store_var(&mut self, ident: &'a str, val: Val) -> Result<Val> {
         let res = self.load_var(ident);
         match res {
-            Ok(_) => Err(InterpError),
+            Ok(_) => panic!("store_var"),
             Err(_) =>  {self.mem_var.insert(ident.to_string(), val.clone()); Ok(val.clone())},
         }
     }
     pub fn store_func(&mut self, ident:  &'a str, func: Expr<'a>) -> Result<Val> {
         let res = self.load_func(ident);
         match res {
-            Ok(_) => Err(InterpError),
+            Ok(_) => panic!("store_func"),
             Err(_) =>  {self.mem_func.insert(ident.to_string(), func); Ok(Val::Empty)},
         }
     }
@@ -48,7 +48,7 @@ impl<'a> Env<'a> {
             Some(val) => Ok(val.clone()),
             _ => {
                 match &mut self.mem_former_env {
-                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Empty => Err(InterpError), // can't change to panic
                     FormerEnv::Next(e) => e.load_var(key),
                 }
             },
@@ -61,7 +61,7 @@ impl<'a> Env<'a> {
             },
             _ => {
                 match &mut self.mem_former_env {
-                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Empty => Err(InterpError), // can't change to panic
                     FormerEnv::Next(e) => e.load_func(key),
                 }
             },
@@ -77,7 +77,7 @@ impl<'a> Env<'a> {
             Some(_) => {self.mem_var.insert(ident, val.clone()); Ok(val.clone())},
             _ => {
                 match &mut self.mem_former_env {
-                    FormerEnv::Empty => Err(InterpError),
+                    FormerEnv::Empty => panic!("update_var"),
                     FormerEnv::Next(e) => e.update_var(ident, val),
                 }
             },
