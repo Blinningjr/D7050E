@@ -34,7 +34,7 @@ pub fn interp_ast<'a>(e: SpanExpr<'a>) -> () {
     let mut env = Env::new();
     // env.store_var("test".to_string(), Val::Num(5));
     println!("{:#?}", interp_expr(e, &mut env));
-    println!("{:#?}", env);
+    // println!("{:#?}", env);
 }
 
 
@@ -45,15 +45,15 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Num(i) => Ok((e, Val::Num(i))),
         Expr::Bool(i) => Ok((e, Val::Bool(i))),
-        Expr::UnOp(op, rv) => interp_unop(e.clone(), op, *rv, env),
+        Expr::UnOp(op, rv) => interp_unop(op, *rv, env),
         Expr::BinOp(lv, op, rv) => interp_binop(e.clone(), *lv, op, *rv, env),
-        Expr::Assign(i, v) => interp_assign(e.clone(), *i, *v, env),
+        Expr::Assign(i, v) => interp_assign(*i, *v, env),
         Expr::Ident(s) => Ok((e, env.load_var(s)?)),
         Expr::If(b, lb, rb) => interp_if(e.clone(), *b, *lb, *rb, env),
         Expr::While(expr, b) => interp_while(e.clone(), *expr, *b, env),
-        Expr::FuncCall(i,p) => interp_func_call(e.clone(), *i, *p, env),
+        Expr::FuncCall(i,p) => interp_func_call(*i, *p, env),
         Expr::Func(i, _, _, _) => store_func_in_env(e, *i, env),
-        Expr::Funcs(v) => interp_funcs(e.clone(), v, env),
+        Expr::Funcs(v) => interp_funcs(v, env),
         _ => Err(InterpError),
     }
 }
@@ -62,17 +62,17 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 /** 
  *  Interprets unary operations in ast.
 */
-fn interp_unop<'a>(expr: SpanExpr<'a>, op: SpanOp, e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+fn interp_unop<'a>(op: SpanOp, e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match op.1 {
         Op::Sub => {
-            let res = interp_expr(e, env)?;
+            let res = interp_expr(e.clone(), env)?;
             match res.1 {
                 Val::Num(i) => Ok((e, Val::Num(-i))),
                 _ => Err(InterpError),
             }
         }
         Op::Not => {
-            let res = interp_expr(e, env)?;
+            let res = interp_expr(e.clone(), env)?;
             match res.1 {
                 Val::Bool(b) => Ok((e, Val::Bool(!b))),
                 _ => Err(InterpError),
@@ -185,7 +185,7 @@ fn get_bool(v: Val) -> Result<bool> {
 /** 
  *  Interprets assignments in ast.
 */
-fn interp_assign<'a>(expr: SpanExpr<'a>, ident: SpanExpr<'a>, value: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+fn interp_assign<'a>(ident: SpanExpr<'a>, value: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match ident.1 {
         Expr::Assign(i, _t) =>{
             match i.1 {
@@ -213,12 +213,12 @@ fn interp_assign<'a>(expr: SpanExpr<'a>, ident: SpanExpr<'a>, value: SpanExpr<'a
 fn interp_if<'a>(expr: SpanExpr<'a>, e: SpanExpr<'a>, lb: SpanExpr<'a>, rb: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     let mut nenv = env.crate_next_env();
     if get_bool(interp_expr(e, env)?.1)? {
-        match lb.1 {
+        match lb.1.clone() {
             Expr::Body(es) => interp_body(lb, es, &mut nenv),
             _ => Err(InterpError),
         }
     } else {
-        match rb.1 {
+        match rb.1.clone() {
             Expr::Body(es) => interp_body(rb, es, &mut nenv),
             Expr::Empty => Ok((expr, Val::Empty)),
             _ => Err(InterpError),
@@ -233,7 +233,10 @@ fn interp_if<'a>(expr: SpanExpr<'a>, e: SpanExpr<'a>, lb: SpanExpr<'a>, rb: Span
 fn interp_body<'a>(expr: SpanExpr<'a>, es: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     let mut res = Ok((expr, Val::Empty));
     for e in es {
-        res = interp_expr(e, env);
+        match e.1 {
+            Expr::Return(v) => return interp_expr(*v, env),
+            _ => res = interp_expr(e, env),
+        }
     }
     return res;
 }
@@ -244,14 +247,14 @@ fn interp_body<'a>(expr: SpanExpr<'a>, es: Vec<SpanExpr<'a>>, env: &mut Env<'a>)
 */
 fn interp_while<'a>(expr: SpanExpr<'a>, e: SpanExpr<'a>, b: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     let mut nenv = env.crate_next_env();
-    let mut res = Ok((expr, Val::Empty));
+    let mut res = Ok((expr.clone(), Val::Empty));
     let v = match b.1 {
         Expr::Body(v) => Ok(v),
         _ => Err(InterpError),
     };
-    let mut w = get_bool(interp_expr(e, &mut nenv)?.1)?;
+    let mut w = get_bool(interp_expr(e.clone(), &mut nenv)?.1)?;
     while w {
-        res = interp_body(expr, v.clone()?, &mut nenv);
+        res = interp_body(expr.clone(), v.clone()?, &mut nenv);
         w = get_bool(interp_expr(e.clone(), &mut nenv)?.1)?;
     }
     return res;
@@ -261,12 +264,12 @@ fn interp_while<'a>(expr: SpanExpr<'a>, e: SpanExpr<'a>, b: SpanExpr<'a>, env: &
 /** 
  *  Interprets function calls in ast.
 */
-fn interp_func_call<'a>(expr: SpanExpr<'a>, i: SpanExpr<'a>, p: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+fn interp_func_call<'a>(i: SpanExpr<'a>, p: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match i.1 {
         Expr::Ident(s) => {
             match p.1 {
                 Expr::Param(v) => {
-                    let (e, mut nenv) = env.load_func(s)?;
+                    let (e, nenv) = env.load_func(s)?;
                     match e {
                         Expr::Func(i, p, t, b) => interp_func(*i.clone(), *p.clone(), v, t.clone(), *b.clone(), &mut nenv.clone()),
                         _ => Err(InterpError),
@@ -290,7 +293,7 @@ fn interp_func<'a>(_i: SpanExpr<'a>, p: SpanExpr<'a>, pv: Vec<SpanExpr<'a>>, _t:
             for p_var in param { 
                 match p_var.1 {
                     Expr::Ident(s) => {env.store_var(s, interp_expr(pv[j].clone(), &mut env.clone())?.1); ()},
-                    Expr::Assign(ident, _t) => {interp_assign(p_var, *ident, pv[j].clone(), env); ()},
+                    Expr::Assign(ident, _t) => {interp_assign(*ident, pv[j].clone(), env); ()},
                     _ => (),
                 }
                 j += 1;
@@ -298,7 +301,7 @@ fn interp_func<'a>(_i: SpanExpr<'a>, p: SpanExpr<'a>, pv: Vec<SpanExpr<'a>>, _t:
         }
         _ => (),
     }
-    match b.1 {
+    match b.1.clone() {
         Expr::Body(es) => interp_body(b, es, env),
         _ => Err(InterpError),
     }
@@ -309,7 +312,7 @@ fn interp_func<'a>(_i: SpanExpr<'a>, p: SpanExpr<'a>, pv: Vec<SpanExpr<'a>>, _t:
 */
 fn store_func_in_env<'a>(f: SpanExpr<'a>, i: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match i.1 {
-        Expr::Ident(s) => Ok((f, env.store_func(s, f.1)?)),
+        Expr::Ident(s) => Ok((f.clone(), env.store_func(s, f.1)?)),
         _ => Err(InterpError),
     }
 }
@@ -317,7 +320,7 @@ fn store_func_in_env<'a>(f: SpanExpr<'a>, i: SpanExpr<'a>, env: &mut Env<'a>) ->
 /** 
  *  Interprets function in ast and store them in env.
 */
-fn interp_funcs<'a>(expr: SpanExpr<'a>, funcs: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+fn interp_funcs<'a>(funcs: Vec<SpanExpr<'a>>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     for func in funcs {
         match (func.1).clone() {
             Expr::Func(i, _, _, _) => {store_func_in_env(func, *i, env); ()},

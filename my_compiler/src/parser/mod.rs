@@ -254,6 +254,7 @@ pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
             |(l, r)| (input, Expr::UnOp(l, Box::new(r))),
         ),
         parse_func_call,
+        parse_return,
         parse_singel_expr,
     ))(input)
 }
@@ -418,6 +419,25 @@ fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
         ),
     ))(input)
 }
+
+
+/**
+ *  Parse return
+ */
+#[allow(dead_code)]
+fn parse_return(input: Span) -> IResult<Span, SpanExpr> {
+    map(
+        preceded(multispace0,
+            tuple((
+                tag("return"),
+                parse_expr,
+                tag(";"),
+            )),
+        ),
+        |(_, e, _)| (input, Expr::Return(Box::new(e)))
+    )(input)
+}
+
 
 /**
  *  Parse a Function call into expresion from string.

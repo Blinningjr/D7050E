@@ -1,13 +1,14 @@
 fn tio(i: i32) -> i32 {
-    if i < 10 {
-        tio(i + 1)
-        } 
+    if i < 0 {
+        return tio(i + 1);
+    } 
     else{
-        i
+        return i;       
     }
+    999
 }
 
 fn main() -> None {
-    let a = 100; 
+    let a = 1; 
     tio(1);
 }

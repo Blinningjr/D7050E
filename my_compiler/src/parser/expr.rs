@@ -29,4 +29,5 @@ pub enum Expr<'a> {
     Funcs(Vec<SpanExpr<'a>>),
     FuncCall(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
     UpdateVar(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
+    Return(Box<SpanExpr<'a>>),
 }

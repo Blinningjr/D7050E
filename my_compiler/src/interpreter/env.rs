@@ -54,7 +54,7 @@ impl<'a> Env<'a> {
             },
         }
     }
-    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr, Env<'a>)>{
+    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr<'a>, Env<'a>)>{
         match self.mem_func.get(key) {
             Some(e) => {
                 Ok((e.clone(), self.crate_next_env()))
