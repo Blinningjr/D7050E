@@ -14,7 +14,7 @@ use expr::Expr;
  */
 use nom::{
     branch::alt,
-    combinator::map,
+    combinator::{map, opt},
     character::complete::{ digit1, alpha1, multispace0, multispace1},
     sequence::{preceded, tuple},
     bytes::complete::tag,
@@ -421,7 +421,7 @@ fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
 
 
 /**
- *  Parse return
+ *  Parse return.
  */
 #[allow(dead_code)]
 fn parse_return(input: Span) -> IResult<Span, SpanExpr> {
@@ -429,9 +429,9 @@ fn parse_return(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
-                tag("return"),
-                parse_func_call,
-                tag(";"),
+                preceded(tag("return"), multispace1),
+                parse_expr,
+                opt(tag(";")),
             )),
         ),
         |(_, e, _)| (input, Expr::Return(Box::new(e)))

@@ -381,8 +381,4 @@ fn test_parse_return() {
     let test1 = parse_expr(Span::new("return tio(i + 1);"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
-
-    // let test2 = parse_expr(Span::new("while i < 10 {i = i + 1;}"));
-    // assert!(test2.is_ok());
-    // assert_eq!((test2.unwrap().0).fragment, "");
 }
