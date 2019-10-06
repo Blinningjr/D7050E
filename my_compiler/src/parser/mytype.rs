@@ -5,6 +5,6 @@
 pub enum MyType {
     Int32,
     Boolean,
-    Str,
-    None,
+    NoType,
+    // None,
 }

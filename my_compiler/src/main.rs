@@ -5,13 +5,13 @@ use std::fs;
 
 #[path = "parser/mod.rs"]
 mod parser;
-#[path = "interpreter/mod.rs"]
-mod interpreter;
+// #[path = "interpreter/mod.rs"]
+// mod interpreter;
 
 
 pub use crate::parser::parse_expr;
 pub use crate::parser::parse;
-pub use crate::interpreter::interp_ast;
+// pub use crate::interpreter::interp_ast;
 
 
 fn main() {

@@ -10,93 +10,6 @@ use crate::parser::{
     parse,
     Span,
     };
-/**
- *  Import enum Expr.
- */
-#[allow(unused_imports)]
-use crate::parser::expr::Expr::{
-    Num,
-    Bool,
-    BinOp,
-    UnOp,
-    Ident,
-    Type,
-    Assign,
-    Empty,
-    If,
-    Body,
-    While,
-    Func,
-    Param,
-    Funcs,
-};
-// // use crate::parser::expr::Expr;
-
-
-/**
- *  Import enum Op.
- */
-#[allow(unused_imports)]
-use crate::parser::op::Op::{
-    Add,        // "+"
-    Sub,        // "-"
-    Div,        // "/"
-    Multi,      // "*"
-    Mod,        // "%"
-    And,        // "&&"
-    Or,         // "||"
-    Not,        // "!"
-    Equal,      // "=="
-    NotEq,      // "!="
-    LessThen,   // "<"
-    LargThen,   // ">"
-    LessEqThen, // "<="
-    LargEqThen, // ">="
-};
-
-
-/**
- *  Import enum MyType.
- */
-#[allow(unused_imports)]
-use crate::parser::mytype::MyType::{
-    Int32,
-    Boolean,
-    Str,
-    None,
-};
-
-
-// /**
-//  *  Calculates the value of an math expression.
-//  *  Needed for tests.
-//  */
-// pub fn math_expr_eval(e: Expr) -> Result<i32> {
-//     match e {
-//         Num(i) => Ok(i),
-//         BinOp(l, op, r) => {
-//             let left_value = math_expr_eval(*l).unwrap();
-//             let right_value = math_expr_eval(*r).unwrap();
-//             match op {
-//                 Add => Ok(left_value + right_value),
-//                 Sub => Ok(left_value - right_value),
-//                 Div => Ok(left_value / right_value),
-//                 Multi => Ok(left_value * right_value),
-//                 Mod => Ok(left_value % right_value),
-//                 _ => Err(SyntaxError),
-//             }
-//         }
-//         UnOp(op, r) => {
-//             let right_value = math_expr_eval(*r).unwrap();
-//             match op {
-//                 Sub => Ok(-right_value),
-//                 _ => Err(SyntaxError),
-//             }
-//         }
-//         _ => Err(SyntaxError),
-//     }
-// }
-
 
 /**
  *  Test parsing singel int.
@@ -136,7 +49,7 @@ fn test_parse_bool() {
  *  Test parsing singel ident.
  */
 #[test]
-fn test_parse_ident() {
+fn test_parse_var() {
     let test1 = parse_expr(Span::new(" apa"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
@@ -153,13 +66,13 @@ fn test_parse_ident() {
     assert!(test5.is_ok());
     assert_eq!((test5.unwrap().0).fragment, "");
 
-    let test6 = parse_expr(Span::new("apa: None"));
-    assert!(test6.is_ok());
-    assert_eq!((test6.unwrap().0).fragment, "");
+    // let test6 = parse_expr(Span::new("apa: None"));
+    // assert!(test6.is_ok());
+    // assert_eq!((test6.unwrap().0).fragment, "");
 
-    let test7 = parse_expr(Span::new("koskos: Str"));
-    assert!(test7.is_ok());
-    assert_eq!((test7.unwrap().0).fragment, "");
+    // let test7 = parse_expr(Span::new("koskos: Str"));
+    // assert!(test7.is_ok());
+    // assert_eq!((test7.unwrap().0).fragment, "");
 }
 
 
@@ -280,19 +193,19 @@ fn test_parse_binop() {
 //  */
 #[test]
 fn test_parse_let() {
-    let test1 = parse_expr(Span::new(" let apa = 20;"));
+    let test1 = parse_expr(Span::new(" let apa: i32 = 20;"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
 
-    let test3 = parse_expr(Span::new("let apa = true;"));
+    let test3 = parse_expr(Span::new("let apa: bool = true;"));
     assert!(test3.is_ok());
     assert_eq!((test3.unwrap().0).fragment, "");
 
-    let test4 = parse_expr(Span::new("let apa = false;"));
+    let test4 = parse_expr(Span::new("let apa: bool = false;"));
     assert!(test4.is_ok());
     assert_eq!((test4.unwrap().0).fragment, "");
 
-    let test5 = parse_expr(Span::new("let apa=20 + 20- 2 * 20;"));
+    let test5 = parse_expr(Span::new("let apa: i32=20 + 20- 2 * 20;"));
     assert!(test5.is_ok());
     assert_eq!((test5.unwrap().0).fragment, "");
 }
@@ -322,7 +235,7 @@ fn test_parse_while() {
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
 
-    let test2 = parse_expr(Span::new("while i < 10 {i = i + 1;}"));
+    let test2 = parse_expr(Span::new("while i < 10 {i}"));
     assert!(test2.is_ok());
     assert_eq!((test2.unwrap().0).fragment, "");
 }
@@ -333,15 +246,15 @@ fn test_parse_while() {
  */
 #[test]
 fn test_parse_func() {
-    let test1 = parse_expr(Span::new("fn apa(input) -> bool { let apa = 10;}"));
+    let test1 = parse_expr(Span::new("fn apa(input: i32) -> bool { let apa = 10;}"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
 
-    let test2 = parse_expr(Span::new("fn apa(input: i32) -> None { let a = 10; let var = true;}"));
+    let test2 = parse_expr(Span::new("fn apa(input: i32) -> i32 { let a = 10; let var = true;}"));
     assert!(test2.is_ok());
     assert_eq!((test2.unwrap().0).fragment, "");
 
-    let test3 = parse_expr(Span::new("fn apor(input: Str, test) -> bool { let apa = 10;}"));
+    let test3 = parse_expr(Span::new("fn apor(input: bool, test: i32) -> bool { let apa = 10;}"));
     assert!(test3.is_ok());
     assert_eq!((test3.unwrap().0).fragment, "");
 }
@@ -363,7 +276,7 @@ fn test_parse_funcs() {
             }
         }
 
-        fn main() -> None {
+        fn main() {
             let a = 100; 
             tio(1);
         }"
@@ -379,6 +292,36 @@ fn test_parse_funcs() {
 #[test]
 fn test_parse_return() {
     let test1 = parse_expr(Span::new("return tio(i + 1);"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test assign statments.
+ */
+#[test]
+fn test_parse_assign() {
+    let test1 = parse_expr(Span::new("a = 10 +1;"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test1 = parse_expr(Span::new("a =a +1;"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test var with type statments.
+ */
+#[test]
+fn test_parse_var_with_type() {
+    let test1 = parse_expr(Span::new("a: i32"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test1 = parse_expr(Span::new("sadsd: bool"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
 }

@@ -13,21 +13,26 @@ use super::{
  */
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr<'a> {
-    Empty,
+    
+    // Empty,  // onödig?
     Num(i32),
     Bool(bool),
-    Ident(&'a str),
-    Type(SpanMyType<'a>),
-    Assign(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
+    // Type(SpanMyType<'a>),
+
+    Var(&'a str),
+    VarWithType(Box<SpanExpr<'a>>, SpanMyType<'a>), // onödig?
+
     UnOp(SpanOp<'a>, Box<SpanExpr<'a>>),
     BinOp(Box<SpanExpr<'a>>, SpanOp<'a>, Box<SpanExpr<'a>>),
-    Body(Vec<SpanExpr<'a>>),
+    Let(Box<SpanExpr<'a>>, SpanMyType<'a>, Box<SpanExpr<'a>>),
+    Assign(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
     If(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>,  Box<SpanExpr<'a>>),
+
+    Body(Vec<SpanExpr<'a>>), 
+
     While(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
-    Func(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>, SpanMyType<'a>, Box<SpanExpr<'a>>),
-    Param(Vec<SpanExpr<'a>>),
-    Funcs(Vec<SpanExpr<'a>>),
-    FuncCall(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
-    UpdateVar(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
+    Func(&'a str, Vec<SpanExpr<'a>>, SpanMyType<'a>, Box<SpanExpr<'a>>),
     Return(Box<SpanExpr<'a>>),
+    FuncCall(Box<SpanExpr<'a>>, Vec<SpanExpr<'a>>),
+    Funcs(Vec<SpanExpr<'a>>), // onödig?
 }
