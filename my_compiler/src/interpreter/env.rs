@@ -2,85 +2,130 @@ use std::collections::HashMap;
 
 use super::val::Val;
 
-use super::interperror::{InterpError, Result};
+use super::enverror::{EnvError, Result};
 
 use crate::parser::expr::Expr;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum FormerEnv<'a> {
-    Empty,
-    Next(Box<Env<'a>>),
-}
 
-/** 
- *  Defins Env that stores variables and functions.
-*/
 #[derive(Debug, PartialEq, Clone)]
-pub struct Env<'a> {
+struct Scope<'a> {
     mem_var: HashMap<String, Val>,
     mem_func: HashMap<String, Expr<'a>>,
-    mem_former_env: FormerEnv<'a>,
+    prev: i32,
+    return_scope: i32,
+    
+}
+impl<'a> Scope<'a> {
+    fn new(prev_pos: i32, return_pos: i32) -> Scope<'a> {
+        Scope {
+            mem_var: HashMap::new(),
+            mem_func: HashMap::new(),
+            prev: prev_pos,
+            return_scope: return_pos,
+        }
+    }
+    fn load_v(&mut self, key: &'a str) -> Result<Val> {
+        match self.mem_var.get(key) {
+            Some(val) => Ok(val.clone()),
+            _ => Err(EnvError),
+        }
+    }
+    fn load_f(&mut self, key: &'a str) -> Result<Expr<'a>> {
+        match self.mem_func.get(key) {
+            Some(expr) => Ok(expr.clone()),
+            _ => Err(EnvError),
+        }
+    }
+    fn store_v(&mut self, key: &'a str, val: Val) -> Option<Val> {
+        self.mem_var.insert(key.to_string(), val.clone())
+    }
+    fn store_f(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
+        self.mem_func.insert(key.to_string(), func.clone())
+    }
+    fn get_prev(&mut self) -> i32 {
+        self.prev
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Env<'a> {
+    scopes: Vec<Scope<'a>>,
+    scope_pos: i32,
+    return_pos: i32,
 }
 impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         Env {
-            mem_var: HashMap::new(),
-            mem_func: HashMap::new(),
-            mem_former_env: FormerEnv::Empty,
+            scopes: Vec::new(),
+            scope_pos: -1,
+            return_pos: -1,
         }
     }
-    pub fn store_var(&mut self, ident: &'a str, val: Val) -> Result<Val> {
-        let res = self.load_var(ident);
+    pub fn crate_scope(&mut self) -> () {
+        self.scopes.push(Scope::new(self.scope_pos, self.return_pos));
+        self.scope_pos = (self.scopes.len() as i32) -1;
+        self.return_pos = self.scope_pos;
+    }
+    pub fn pop_scope(&mut self) -> () {
+        self.scope_pos = self.scopes[self.scope_pos as usize].return_scope;
+        self.return_pos = self.scope_pos;
+        self.scopes.pop();
+    }
+    pub fn store_var(&mut self, key: &'a str, val: Val) -> Option<Val> {
+        let res = self.load_var(key);
         match res {
-            Ok(_) => panic!("store_var"),
-            Err(_) =>  {self.mem_var.insert(ident.to_string(), val.clone()); Ok(val.clone())},
+            Ok(_) => panic!("store_var {:?} {:?}", key, val),
+            Err(_) =>  self.scopes[self.scope_pos as usize].store_v(key, val),
         }
     }
-    pub fn store_func(&mut self, ident:  &'a str, func: Expr<'a>) -> Result<Val> {
-        let res = self.load_func(ident);
+    pub fn store_func(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
+        let res = self.load_func(key);
         match res {
             Ok(_) => panic!("store_func"),
-            Err(_) =>  {self.mem_func.insert(ident.to_string(), func); Ok(Val::Empty)},
+            Err(_) => self.scopes[self.scope_pos as usize].store_f(key, func),
         }
     }
-    pub fn load_var(&mut self, key: &'a str) -> Result<Val>{
-        match self.mem_var.get(key) {
-            Some(val) => Ok(val.clone()),
-            _ => {
-                match &mut self.mem_former_env {
-                    FormerEnv::Empty => Err(InterpError), // can't change to panic
-                    FormerEnv::Next(e) => e.load_var(key),
-                }
-            },
+    pub fn load_var(&mut self, key: &'a str) -> Result<Val> {
+        let mut pos = self.scope_pos;
+        while pos >= 0 {
+            let res = self.scopes[pos as usize].load_v(key);
+            match res {
+                Ok(_) => return res,
+                _ => {
+                    pos = self.scopes[pos as usize].get_prev();
+                },
+            }
         }
+        Err(EnvError)
     }
-    pub fn load_func(&mut self, key: &'a str) -> Result<(Expr<'a>, Env<'a>)>{
-        match self.mem_func.get(key) {
-            Some(e) => {
-                Ok((e.clone(), self.crate_next_env()))
-            },
-            _ => {
-                match &mut self.mem_former_env {
-                    FormerEnv::Empty => Err(InterpError), // can't change to panic
-                    FormerEnv::Next(e) => e.load_func(key),
-                }
-            },
-        }
+    pub fn load_func(&mut self, key: &'a str) -> Result<Expr<'a>> {
+        let mut pos = self.scope_pos;
+        while pos >= 0 {
+            let res = self.scopes[pos as usize].load_f(key);
+            match res {
+                Ok(_) => {
+                    self.return_pos = self.scope_pos;
+                    self.scope_pos = pos; 
+                    return res
+                },
+                _ => {
+                    pos = self.scopes[pos as usize].get_prev();
+                },
+            }
+        } 
+        Err(EnvError)
     }
-    pub fn crate_next_env(&mut self) ->  Env<'a> {
-        let mut env = Env::new();
-        env.mem_former_env = FormerEnv::Next(Box::new(self.clone()));
-        env
-    }
-    pub fn update_var(&mut self, ident: String, val: Val) -> Result<Val> {
-        match self.mem_var.get(&ident) {
-            Some(_) => {self.mem_var.insert(ident, val.clone()); Ok(val.clone())},
-            _ => {
-                match &mut self.mem_former_env {
-                    FormerEnv::Empty => panic!("update_var"),
-                    FormerEnv::Next(e) => e.update_var(ident, val),
-                }
-            },
-        }
+    pub fn assign_var(&mut self, key: &'a str, val: Val) -> Option<Val> {
+        let mut pos = self.scope_pos;
+        while pos >= 0 {
+            let res = self.scopes[pos as usize].load_v(key);
+            match res {
+                Ok(_) => return self.scopes[pos as usize].store_v(key, val),
+                _ => {
+                    pos = self.scopes[pos as usize].get_prev();
+                },
+            }
+        } 
+        panic!("assign_var");
     }
 }

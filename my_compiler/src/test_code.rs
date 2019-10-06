@@ -1,5 +1,5 @@
 fn tio(i: i32) -> i32 {
-    if i < 2 {
+    if i < 50 {
         return tio(i + 1);
     } 
     else{
@@ -8,6 +8,6 @@ fn tio(i: i32) -> i32 {
 }
 
 fn main() {
-    let a = 1; 
-    tio(a);
+    let a: i32 = 2; 
+    tio(2);
 }
