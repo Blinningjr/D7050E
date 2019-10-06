@@ -1,0 +1,54 @@
+(* General defenitions *)
+    digit excluding zero = r[1-9] ;
+    digit = "0" | digit excluding zero ;
+    natural number = digit excluding zero, { digit } ;
+    int = "0" | [ "-" ], natural number ;
+    letter = r[ a-ö ] ;
+    ident = letter, { letter } ;
+
+
+(* Defenition of MyType *)
+    Int32 = "i32" ;
+    Boolean = "bool" ;
+    NoType = ? white_space characters ? | [ "()" ] ;
+    MyType = Int32 | Boolean |  NoType ;
+
+
+(* Defenition of Op *)
+    Add = "+" ;
+    Sub = "-" ;
+    Div = "/" ;
+    Multi = "*" ;
+    Mod = "%" ;
+    And = "&&" ;
+    Or = "||" ;
+    Not = "!" ;
+    Equal = "==" ;
+    NotEq = "!=" ;
+    LessThen = "<" ;
+    LargThen = ">" ;
+    LessEqThen = "<=" ;
+    LargEqThen = ">=" ;
+    Op = Add | Sub ¦ Div ¦ Multi | Mod | And | Or | Not | Equal 
+        | NotEq | LessThen |  LargThen | LessEqThen | LargEqThen ;
+
+
+(* Defenition of Expr *)
+    Num = int ;
+    Bool = "true" | "false" ;
+    Var = ident ;
+    VarWithType = ident, ":", MyType ;
+    UnOp = Op, Expr ;
+    BinOp = Expr, Op, Expr ;
+    Let = ident, ":", MyType, "=", Expr, ";" ;
+    Assign = ident, "=",  Expr, ";" ;
+    If = "if", Expr, Body, [ "else", Body ] ; 
+    Body = "{", {Expr}, "}" ;
+    While = "while", Expr, Body ;
+    Func = "Fn", ident, "(", { VarWithType }, ")", [ "->", MyType ], Body ;
+    Return = "return", Expr, ";" ;
+    FuncCall = ident, "(", [ Expr, { ",", Expr } ], ")", [ ";" ] ;
+    Funcs =  { Func } ;
+    parentheses = "(", Expr, ")" ;
+    Expr = Bool | Num | Var | VarWithType | UnOp | BinOp | Let | Assign 
+        | If | Body | While | Func | Return | FuncCall | Funcs | parentheses;

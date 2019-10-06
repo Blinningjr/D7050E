@@ -185,14 +185,14 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("let")), 
-            parse_var, 
+            preceded(multispace0, alpha1), 
             tag(":"),
             preceded(multispace0, parse_mytype), 
             preceded(multispace0, tag("=")), 
             preceded(multispace0, parse_expr), 
             preceded(multispace0, tag(";")),
         )),
-        |(_, i, _, t, _, r, _)| (input, Expr::Let(Box::new(i), t, Box::new(r)))
+        |(_, i, _, t, _, r, _)| (input, Expr::Let(i.fragment, t, Box::new(r)))
     )(input)
 }
 
@@ -204,12 +204,12 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
 fn parse_assign(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
-            parse_var, 
+            preceded(multispace0, alpha1), 
             preceded(multispace0, tag("=")), 
             preceded(multispace0, parse_expr), 
             preceded(multispace0, tag(";")),
         )),
-        |(i, _, r, _)| (input, Expr::Assign(Box::new(i), Box::new(r)))
+        |(i, _, r, _)| (input, Expr::Assign(i.fragment, Box::new(r)))
     )(input)
 }
 
@@ -403,25 +403,25 @@ fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
         map(
             preceded(multispace0,
                 tuple((
-                    parse_var,
+                    preceded(multispace0, alpha1),
                     tag("("),
                     separated_list(tag(","), parse_expr),
                     tag(")"),
                     tag(";"),
                 )),
             ),
-            |(i, _, p, _, _)| (input, Expr::FuncCall(Box::new(i), p))
+            |(i, _, p, _, _)| (input, Expr::FuncCall(i.fragment, p))
         ),
         map(
             preceded(multispace0,
                 tuple((
-                    parse_var,
+                    preceded(multispace0, alpha1),
                     tag("("),
                     separated_list(tag(","), parse_expr),
                     tag(")"),
                 )),
             ),
-            |(i, _, p, _)| (input, Expr::FuncCall(Box::new(i), p))
+            |(i, _, p, _)| (input, Expr::FuncCall(i.fragment, p))
         ),
     ))(input)
 }
@@ -463,11 +463,11 @@ fn parse_var_with_type(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
-                parse_var,
+                preceded(multispace0, alpha1),
                 tag(":"),
                 parse_mytype,
             )),
         ),
-        |(i, _, t)| (input, Expr::VarWithType(Box::new(i), t))
+        |(i, _, t)| (input, Expr::VarWithType(i.fragment, t))
     )(input)
 }
