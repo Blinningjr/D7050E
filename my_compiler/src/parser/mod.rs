@@ -64,6 +64,7 @@ pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
         parse_func,
         parse_while,
         parse_if,
+        parse_body,
         parse_let,
         parse_assign,
         parse_binop,

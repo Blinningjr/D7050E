@@ -2,10 +2,10 @@ pub mod enverror;
 use enverror::{Result, EnvError};
 
 pub mod val;
-use val::Val;
+pub use val::Val;
 
 pub mod env;
-use env::Env;
+pub use env::Env;
 
 
 /**
@@ -50,12 +50,14 @@ fn get_bool(v: Val) -> Result<bool> {
 /** 
  *  Interprets a ast.
 */
-pub fn interp_ast<'a>(e: SpanExpr<'a>) -> () {
+pub fn interp_ast<'a>(e: SpanExpr<'a>) -> Result<SpanVal<'a>> {
     let mut env = Env::new();
     env.crate_scope();
     // env.store_var(&"a", Val::Num(5));
-    println!("{:#?}", interp_expr(e, &mut env));
-    println!("{:#?}", env);
+    let res = interp_expr(e, &mut env);
+    // println!("{:#?}", res);
+    // println!("{:#?}", env);
+    res
 }
 
 
@@ -82,6 +84,7 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::FuncCall(_, _) => interp_func_call(e, env),
         Expr::Func(i, _, _, _) => {env.store_func(i, e.1.clone()); Ok((e, Val::Empty))},
         Expr::Funcs(_) => interp_funcs(e, env),
+        Expr::Body(_) => interp_body(e, env),
         _ => panic!("interp_expr"),
     }
 }
@@ -186,9 +189,11 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     get_bool(rr)?
                 ))),
                 Op::NotEq => Ok((e, Val::Bool(
-                    get_bool(lr)?
-                    !=
-                    get_bool(rr)?
+                    match lr {
+                        Val::Bool(b) => b != get_bool(rr)?,
+                        Val::Num(v) => v != get_int(rr)?,
+                        _ => panic!("interp_binop"),
+                    }
                 ))),
                 _ => panic!("interp_binop"),
             }
