@@ -65,14 +65,37 @@ fn test_parse_var() {
     let test5 = parse_expr(Span::new("apa: bool"));
     assert!(test5.is_ok());
     assert_eq!((test5.unwrap().0).fragment, "");
+}
 
-    // let test6 = parse_expr(Span::new("apa: None"));
-    // assert!(test6.is_ok());
-    // assert_eq!((test6.unwrap().0).fragment, "");
 
-    // let test7 = parse_expr(Span::new("koskos: Str"));
-    // assert!(test7.is_ok());
-    // assert_eq!((test7.unwrap().0).fragment, "");
+/**
+ *  Test parsing ident with prefix.
+ */
+#[test]
+fn test_parse_var_with_prefix() {
+    let test1 = parse_expr(Span::new(" &apa"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("mut koskos"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new("&mut koskos"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+
+    let test5 = parse_expr(Span::new("&apa: bool"));
+    assert!(test5.is_ok());
+    assert_eq!((test5.unwrap().0).fragment, "");
+
+    let test6 = parse_expr(Span::new("mut apa: bool"));
+    assert!(test6.is_ok());
+    assert_eq!((test6.unwrap().0).fragment, "");
+    
+    let test7 = parse_expr(Span::new("&mut apa: bool"));
+    assert!(test7.is_ok());
+    assert_eq!((test7.unwrap().0).fragment, "");
 }
 
 
@@ -188,9 +211,9 @@ fn test_parse_binop() {
 }
 
 
-// /**
-//  *  Test parsing let statments.
-//  */
+/**
+ *  Test parsing let statments.
+ */
 #[test]
 fn test_parse_let() {
     let test1 = parse_expr(Span::new(" let apa: i32 = 20;"));
@@ -208,6 +231,21 @@ fn test_parse_let() {
     let test5 = parse_expr(Span::new("let apa: i32=20 + 20- 2 * 20;"));
     assert!(test5.is_ok());
     assert_eq!((test5.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing let statments with prefix.
+ */
+#[test]
+fn test_parse_let_with_prefix() {
+    let test1 = parse_expr(Span::new(" let mut apa: i32 = 20;"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("let &mut apa: bool = true;"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
 }
 
 

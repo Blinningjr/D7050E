@@ -7,6 +7,8 @@ use std::fs;
 mod parser;
 #[path = "interpreter/mod.rs"]
 mod interpreter;
+#[path = "typechecker/mod.rs"]
+mod typechecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
@@ -20,6 +22,6 @@ fn main() {
     // let f = parse(" while a < 10 { a = a + 2;}");
     let f = parse(contents.as_str());
     // println!("Output = {:#?}" , f); // print parsed ast.
-    // println!("{:#?} : {:#?}" , f.0, interp_ast(f.1)); // Print interp and env.
-    interp_ast(f.unwrap().1);
+    println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
+    // interp_ast(f.unwrap().1);
 }

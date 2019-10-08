@@ -53,7 +53,7 @@ fn get_bool(v: Val) -> Result<bool> {
 pub fn interp_ast<'a>(e: SpanExpr<'a>) -> Result<SpanVal<'a>> {
     let mut env = Env::new();
     env.crate_scope();
-    // env.store_var(&"a", Val::Num(5));
+    // env.store_var(&"a", Val::Num(5), Prefix::Mut);
     let res = interp_expr(e, &mut env);
     // println!("{:#?}", res);
     // println!("{:#?}", env);
@@ -70,9 +70,9 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::Bool(i) => Ok((e, Val::Bool(i))),
         Expr::UnOp(_, _) => interp_unop(e, env),
         Expr::BinOp(_, _, _) => interp_binop(e, env),
-        Expr::Let(_, _, _) => interp_let(e, env),
+        Expr::Let(_, _, _, _) => interp_let(e, env),
         Expr::Assign(_, _) => interp_assign(e, env),
-        Expr::Var(s) => {
+        Expr::Var(_, s) => {
             let t = env.load_var(s);
             if t.is_err() {
                 panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
@@ -208,14 +208,15 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 */
 fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
-        Expr::Let(s, _t, value) => {
+        Expr::Let(p, s, _t, value) => {
             let val = interp_expr(*value, env)?;
-            env.store_var(s, (val.1).clone());
+            env.store_var(s, (val.1).clone(), p.1);
             return Ok(val);
         },
         _ => panic!("interp_let"),
     }
 }
+
 
 /** 
  *  Interprets assignments in ast.
@@ -355,7 +356,7 @@ fn interp_func<'a>(e: Expr<'a>, pv: Vec<Val>, env: &mut Env<'a>) -> Result<SpanV
             let mut j = 0;
             for p_var in p.clone() { 
                 match p_var.1 {
-                    Expr::VarWithType(ident, _type) => {env.store_var(ident, pv[j].clone()); ()}
+                    Expr::VarWithType(p, ident, _type) => {env.store_var(ident, pv[j].clone(), p.1); ()}
                     _ => panic!("interp_func"),
                 }
                 j += 1;

@@ -6,6 +6,9 @@ use op::Op;
 pub mod mytype;
 use mytype::MyType;
 
+pub mod varprefix;
+use varprefix::Prefix;
+
 pub mod expr;
 use expr::Expr;
 
@@ -53,6 +56,7 @@ pub type SpanOp<'a> = (Span<'a>, Op);
 pub type SpanExpr<'a> = (Span<'a>, Expr<'a>);
 
 pub type SpanMyType<'a> = (Span<'a>, MyType);
+pub type SpanPrefix<'a> = (Span<'a>, Prefix);
 
 
 /**
@@ -155,9 +159,38 @@ fn parse_binoperand(input: Span) -> IResult<Span, SpanOp> {
 #[allow(dead_code)]
 fn parse_var(input: Span) -> IResult<Span, SpanExpr> {
     map(
-        preceded(multispace0, alpha1),
-        |s: Span| (s, Expr::Var(s.fragment))
+        tuple((
+            parse_var_prefix,
+            preceded(multispace0, alpha1),
+        )),
+        |(p, s)| (s, Expr::Var(p, s.fragment))
     )(input)
+}
+
+
+/**
+ *  Parse a var prefix expresion from string.
+ */
+#[allow(dead_code)]
+fn parse_var_prefix(input: Span) -> IResult<Span, SpanPrefix> {
+    alt((
+        map(
+            preceded(multispace0, tag("&mut")),
+            |_| (input, Prefix::BorrowMut)
+        ),
+        map(
+            preceded(multispace0, tag("mut")),
+            |_| (input, Prefix::Mut)
+        ),
+        map(
+            preceded(multispace0, tag("&")),
+            |_| (input, Prefix::Borrow)
+        ),
+        map(
+            tag(""),
+            |_| (input, Prefix::None)
+        ),
+    ))(input)
 }
 
 
@@ -186,14 +219,15 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
             preceded(multispace0, tag("let")), 
+            parse_var_prefix,
             preceded(multispace0, alpha1), 
             tag(":"),
-            preceded(multispace0, parse_mytype), 
+            parse_mytype, 
             preceded(multispace0, tag("=")), 
-            preceded(multispace0, parse_expr), 
+            parse_expr, 
             preceded(multispace0, tag(";")),
         )),
-        |(_, i, _, t, _, r, _)| (input, Expr::Let(i.fragment, t, Box::new(r)))
+        |(_, p, i, _, t, _, r, _)| (input, Expr::Let(p, i.fragment, t, Box::new(r)))
     )(input)
 }
 
@@ -465,11 +499,12 @@ fn parse_var_with_type(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
+                parse_var_prefix,
                 preceded(multispace0, alpha1),
                 tag(":"),
                 parse_mytype,
             )),
         ),
-        |(i, _, t)| (input, Expr::VarWithType(i.fragment, t))
+        |(p, i, _, t)| (input, Expr::VarWithType(p, i.fragment, t))
     )(input)
 }

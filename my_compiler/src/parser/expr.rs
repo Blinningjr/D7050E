@@ -5,6 +5,7 @@ use super::{
     SpanExpr,
     SpanMyType,
     SpanOp,
+    SpanPrefix,
 };
 
 
@@ -19,12 +20,12 @@ pub enum Expr<'a> {
     Bool(bool),
     // Type(SpanMyType<'a>),
 
-    Var(&'a str),
-    VarWithType(&'a str, SpanMyType<'a>), // onödig?
+    Var(SpanPrefix<'a>, &'a str),
+    VarWithType(SpanPrefix<'a>, &'a str, SpanMyType<'a>), // onödig?
 
     UnOp(SpanOp<'a>, Box<SpanExpr<'a>>),
     BinOp(Box<SpanExpr<'a>>, SpanOp<'a>, Box<SpanExpr<'a>>),
-    Let(&'a str, SpanMyType<'a>, Box<SpanExpr<'a>>),
+    Let(SpanPrefix<'a>, &'a str, SpanMyType<'a>, Box<SpanExpr<'a>>),
     Assign(&'a str, Box<SpanExpr<'a>>),
     If(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>,  Box<SpanExpr<'a>>),
 

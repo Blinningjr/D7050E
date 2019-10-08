@@ -5,11 +5,12 @@ use super::val::Val;
 use super::enverror::{EnvError, Result};
 
 use crate::parser::expr::Expr;
+use crate::parser::varprefix::Prefix;
 
 
 #[derive(Debug, PartialEq, Clone)]
 struct Scope<'a> {
-    mem_var: HashMap<String, Val>,
+    mem_var: HashMap<String, (Prefix, Val)>,
     mem_func: HashMap<String, Expr<'a>>,
     prev: i32,
     return_scope: i32,
@@ -24,7 +25,7 @@ impl<'a> Scope<'a> {
             return_scope: return_pos,
         }
     }
-    fn load_v(&mut self, key: &'a str) -> Result<Val> {
+    fn load_v(&mut self, key: &'a str) -> Result<(Prefix, Val)> {
         match self.mem_var.get(key) {
             Some(val) => Ok(val.clone()),
             _ => Err(EnvError),
@@ -36,8 +37,8 @@ impl<'a> Scope<'a> {
             _ => Err(EnvError),
         }
     }
-    fn store_v(&mut self, key: &'a str, val: Val) -> Option<Val> {
-        self.mem_var.insert(key.to_string(), val.clone())
+    fn store_v(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<(Prefix, Val)> {
+        self.mem_var.insert(key.to_string(), (prefix, val.clone()))
     }
     fn store_f(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
         self.mem_func.insert(key.to_string(), func.clone())
@@ -71,11 +72,11 @@ impl<'a> Env<'a> {
         self.return_pos = self.scope_pos;
         self.scopes.pop();
     }
-    pub fn store_var(&mut self, key: &'a str, val: Val) -> Option<Val> {
+    pub fn store_var(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<(Prefix, Val)> {
         let res = self.load_var(key);
         match res {
             Ok(_) => panic!("store_var {:?} {:?}", key, val),
-            Err(_) =>  self.scopes[self.scope_pos as usize].store_v(key, val),
+            Err(_) =>  self.scopes[self.scope_pos as usize].store_v(key, val, prefix),
         }
     }
     pub fn store_func(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
@@ -90,7 +91,7 @@ impl<'a> Env<'a> {
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
-                Ok(_) => return res,
+                Ok(tup) => return Ok(tup.1),
                 _ => {
                     pos = self.scopes[pos as usize].get_prev();
                 },
@@ -115,12 +116,19 @@ impl<'a> Env<'a> {
         } 
         Err(EnvError)
     }
-    pub fn assign_var(&mut self, key: &'a str, val: Val) -> Option<Val> {
+    pub fn assign_var(&mut self, key: &'a str, val: Val) -> Option<(Prefix, Val)> {
         let mut pos = self.scope_pos;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
-                Ok(_) => return self.scopes[pos as usize].store_v(key, val),
+                Ok(tup) => {
+                    match tup.0 {
+                        Prefix::BorrowMut => return self.scopes[pos as usize].store_v(key, val, tup.0),
+                        Prefix::Mut => return self.scopes[pos as usize].store_v(key, val, tup.0),
+                        Prefix::Borrow => panic!("Can't assign_var to none mut var value"),
+                        Prefix::None => panic!("Can't assign_var to none mut value value"),
+                    }
+                },
                 _ => {
                     pos = self.scopes[pos as usize].get_prev();
                 },

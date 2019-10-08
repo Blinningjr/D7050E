@@ -131,11 +131,11 @@ fn test_interp_binop() {
  */
 #[test]
 fn test_interp_let_assign_var() {
-    let test1 = interp_ast(parse_expr(Span::new("{let a: i32 = 10; a = a + 2;}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2;}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let a: bool = true; !a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; !a}")).unwrap().1);
     assert!(test2.is_ok());
     assert_eq!(test2.unwrap().1, Val::Bool(false));
 }
@@ -172,11 +172,11 @@ fn test_interp_if_panic() {
  */
 #[test]
 fn test_interp_while() {
-    let test1 = interp_ast(parse_expr(Span::new("{let a: i32 = 0; while a < 10 {a = a +1;} a}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 0; while a < 10 {a = a +1;} a}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(10));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let a: bool = true; while a {a = false;} a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; while a {a = false;} a}")).unwrap().1);
     assert!(test2.is_ok());
     assert_eq!(test2.unwrap().1, Val::Bool(false));
 }
@@ -263,3 +263,72 @@ fn test_interp_ast() {
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Empty);
 }
+
+
+/**
+ *  Test interpreting mutabilety.
+ */
+#[test]
+fn test_interp_mut() {
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2;}")).unwrap().1);
+    assert!(test1.is_ok());
+    assert_eq!(test1.unwrap().1, Val::Num(12));
+
+    let test2 = interp_ast(parse_expr(Span::new("{let &mut a: bool = true; !a}")).unwrap().1);
+    assert!(test2.is_ok());
+    assert_eq!(test2.unwrap().1, Val::Bool(false));
+}
+
+
+/**
+ *  Test interpreting mutabilety.
+ */
+#[test]
+#[should_panic]
+fn test_interp_mut_panic1() {
+    let test1 = interp_ast(parse_expr(Span::new("{let a: i32 = 10; a = a + 2;}")).unwrap().1);
+    assert!(test1.is_ok());
+    assert_eq!(test1.unwrap().1, Val::Num(12));
+}
+
+
+/**
+ *  Test interpreting mutabilety.
+ */
+#[test]
+#[should_panic]
+fn test_interp_mut_panic2() {
+    let test1 = interp_ast(parse_expr(Span::new("{let & a: i32 = 10; a = a + 2;}")).unwrap().1);
+    assert!(test1.is_ok());
+    assert_eq!(test1.unwrap().1, Val::Num(12));
+}
+
+
+/**
+ *  Test interpreting borrow.
+ */
+#[test]
+fn test_interp_borrow() {
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: i32 = &a; a = a + 2; b}")).unwrap().1);
+    assert!(test1.is_ok());
+    assert_eq!(test1.unwrap().1, Val::Num(12));
+
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: bool = &a; a = !a; b}")).unwrap().1);
+    assert!(test2.is_ok());
+    assert_eq!(test2.unwrap().1, Val::Bool(false));
+}
+
+
+// /**
+//  *  Test interpreting borrow mut.
+//  */
+// #[test]
+// fn test_interp_borrow_mut() {
+//     let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let &mut b: i32 = &a; a = a + 2; b}")).unwrap().1);
+//     assert!(test1.is_ok());
+//     assert_eq!(test1.unwrap().1, Val::Num(99)); // not implmented yet.
+
+//     // let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: bool = &a; a = !a; b}")).unwrap().1);
+//     // assert!(test2.is_ok());
+//     // assert_eq!(test2.unwrap().1, Val::Bool(false));
+// }
