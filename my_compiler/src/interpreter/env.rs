@@ -25,7 +25,7 @@ impl<'a> Scope<'a> {
             return_scope: return_pos,
         }
     }
-    fn load_v(&mut self, key: &'a str) -> Result<(Prefix, Val)> {
+    fn load_v(&mut self, key: &str) -> Result<(Prefix, Val)> {
         match self.mem_var.get(key) {
             Some(val) => Ok(val.clone()),
             _ => Err(EnvError),
@@ -86,14 +86,14 @@ impl<'a> Env<'a> {
             Err(_) => self.scopes[self.scope_pos as usize].store_f(key, func),
         }
     }
-    pub fn load_var(&mut self, key: &'a str) -> Result<Val> {
+    pub fn load_var(&mut self, key: &str) -> Result<Val> {
         let mut pos = self.scope_pos;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
                 Ok(tup) => {
                         match tup.1 {
-                            Val::Ident(s) => self.load_var(s),
+                            Val::Ident(s) => return self.load_var(&s),
                             _ => return Ok(tup.1),
                         };
                     },

@@ -71,12 +71,18 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::BinOp(_, _, _) => interp_binop(e, env),
         Expr::Let(_, _, _, _) => interp_let(e, env),
         Expr::Assign(_, _) => interp_assign(e, env),
-        Expr::Var(_, s) => {
-            let t = env.load_var(s);
-            if t.is_err() {
-                panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
+        Expr::Var(p, s) => {
+            match p.1 {
+                Prefix::Borrow => Ok((e, Val::Ident(s.to_string()))),
+                Prefix::BorrowMut => Ok((e, Val::Ident(s.to_string()))),
+                _ => {
+                    let t = env.load_var(s);
+                    if t.is_err() {
+                        panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
+                    }
+                    return Ok((e, t?));
+                },
             }
-            Ok((e, t?))
         },
         Expr::If(_, _, _) => interp_if(e, env),
         Expr::While(_, _) => interp_while(e, env),
@@ -209,8 +215,8 @@ fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Let(p, s, _t, value) => {
             let val = match p.1 {
-                Prefix::Borrow => (e, Val::Ident(s.to_string())),
-                Prefix::BorrowMut => (e, Val::Ident(s.to_string())),
+                Prefix::Borrow => panic!("interp_let Prefix::Borrow"),
+                Prefix::BorrowMut => panic!("interp_let Prefix::BorrowMut"),
                 _ => interp_expr(*value, env)?,
             };
             env.store_var(s, (val.1).clone(), p.1);

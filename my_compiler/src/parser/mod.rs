@@ -216,19 +216,33 @@ fn parse_mytype(input: Span) -> IResult<Span, SpanMyType> {
  */
 #[allow(dead_code)]
 fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
-    map(
-        tuple((
-            preceded(multispace0, tag("let")), 
-            parse_var_prefix,
-            preceded(multispace0, alpha1), 
-            tag(":"),
-            parse_mytype, 
-            preceded(multispace0, tag("=")), 
-            parse_expr, 
-            preceded(multispace0, tag(";")),
-        )),
-        |(_, p, i, _, t, _, r, _)| (input, Expr::Let(p, i.fragment, t, Box::new(r)))
-    )(input)
+    alt ((
+        map(
+            tuple((
+                preceded(multispace0, tag("let")), 
+                preceded(multispace0, tag("mut")),
+                preceded(multispace0, alpha1), 
+                tag(":"),
+                parse_mytype, 
+                preceded(multispace0, tag("=")), 
+                parse_expr, 
+                preceded(multispace0, tag(";")),
+            )),
+            |(_, _, i, _, t, _, r, _)| (input, Expr::Let((input, Prefix::Mut), i.fragment, t, Box::new(r)))
+        ),
+        map(
+            tuple((
+                preceded(multispace0, tag("let")), 
+                preceded(multispace0, alpha1), 
+                tag(":"),
+                parse_mytype, 
+                preceded(multispace0, tag("=")), 
+                parse_expr, 
+                preceded(multispace0, tag(";")),
+            )),
+            |(_, i, _, t, _, r, _)| (input, Expr::Let((input, Prefix::None), i.fragment, t, Box::new(r)))
+        ),
+    ))(input)
 }
 
 

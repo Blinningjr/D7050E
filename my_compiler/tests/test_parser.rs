@@ -238,12 +238,12 @@ fn test_parse_let() {
  *  Test parsing let statments with prefix.
  */
 #[test]
-fn test_parse_let_with_prefix() {
+fn test_parse_mut_let() {
     let test1 = parse_expr(Span::new(" let mut apa: i32 = 20;"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
 
-    let test3 = parse_expr(Span::new("let &mut apa: bool = true;"));
+    let test3 = parse_expr(Span::new("let mut apa: bool = true;"));
     assert!(test3.is_ok());
     assert_eq!((test3.unwrap().0).fragment, "");
 }

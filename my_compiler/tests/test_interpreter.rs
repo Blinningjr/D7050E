@@ -274,7 +274,7 @@ fn test_interp_mut() {
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let &mut a: bool = true; !a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; !a}")).unwrap().1);
     assert!(test2.is_ok());
     assert_eq!(test2.unwrap().1, Val::Bool(false));
 }
@@ -298,7 +298,7 @@ fn test_interp_mut_panic1() {
 #[test]
 #[should_panic]
 fn test_interp_mut_panic2() {
-    let test1 = interp_ast(parse_expr(Span::new("{let & a: i32 = 10; a = a + 2;}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let &a: i32 = 10; a = a + 2;}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12));
 }
