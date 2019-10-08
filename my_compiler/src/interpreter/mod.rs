@@ -14,13 +14,12 @@ pub use env::Env;
 #[path = "../parser/mod.rs"]
 mod parser;
 use crate::parser::{
-    // Span,
     SpanExpr,
     expr::Expr,
     op::Op,
-    // IResult,
 };
 
+use crate::parser::varprefix::Prefix;
 
 pub type SpanVal<'a> = (SpanExpr<'a>, Val);
 
@@ -209,7 +208,11 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Let(p, s, _t, value) => {
-            let val = interp_expr(*value, env)?;
+            let val = match p.1 {
+                Prefix::Borrow => (e, Val::Ident(s.to_string())),
+                Prefix::BorrowMut => (e, Val::Ident(s.to_string())),
+                _ => interp_expr(*value, env)?,
+            };
             env.store_var(s, (val.1).clone(), p.1);
             return Ok(val);
         },

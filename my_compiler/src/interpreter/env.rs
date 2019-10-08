@@ -91,7 +91,12 @@ impl<'a> Env<'a> {
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
-                Ok(tup) => return Ok(tup.1),
+                Ok(tup) => {
+                        match tup.1 {
+                            Val::Ident(s) => self.load_var(s),
+                            _ => return Ok(tup.1),
+                        };
+                    },
                 _ => {
                     pos = self.scopes[pos as usize].get_prev();
                 },

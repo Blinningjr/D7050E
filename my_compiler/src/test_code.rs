@@ -8,7 +8,7 @@ fn tio(i: i32) -> i32 {
 }
 
 fn main() {
-    let &mut a: i32 = 2; 
+    let mut a: i32 = 2; 
     a = a + 2;
     tio(2);
 }

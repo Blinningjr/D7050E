@@ -9,4 +9,5 @@ pub enum Val {
     ReturnBool(bool),
     Empty,
     ReturnEmpty,
+    Ident(String),
 }
