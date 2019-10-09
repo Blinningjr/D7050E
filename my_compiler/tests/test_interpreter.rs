@@ -315,14 +315,13 @@ fn test_interp_borrow() {
  */
 #[test]
 fn test_interp_borrow_mut() {
-    // &mut don't work.
     let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12)); 
 
-    // let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; a}")).unwrap().1);
-    // assert!(test2.is_ok());
-    // assert_eq!(test2.unwrap().1, Val::Bool(false));
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c: &mut bool = &mut b; **c = false; a}")).unwrap().1);
+    assert!(test2.is_ok());
+    assert_eq!(test2.unwrap().1, Val::Bool(false));
 }
 
 /**
@@ -330,6 +329,30 @@ fn test_interp_borrow_mut() {
  */
 #[test]
 fn test_interp_func_borrow_mut() {
-    // borrow in func call don't work.
-    panic!("test_interp_func_borrow_mut not implemented");
+    let test1 = interp_ast(parse_expr(Span::new(
+        " 
+        {
+        fn test(i: &mut i32) -> () {
+            *i = 10;
+        }
+        let mut a: i32 = 0;
+        test(&mut a);
+        a
+        }
+        ")).unwrap().1);
+    assert_eq!(test1.unwrap().1, Val::Num(10)); 
+
+    let test2 = interp_ast(parse_expr(Span::new(
+        " 
+        {
+        fn test(i: &mut i32) -> () {
+            **i = 10;
+        }
+        let mut a: i32 = 0;
+        let mut b:  &mut i32 = &mut a;
+        test(&mut b);
+        a
+        }
+        ")).unwrap().1);
+    assert_eq!(test2.unwrap().1, Val::Num(10)); 
 }

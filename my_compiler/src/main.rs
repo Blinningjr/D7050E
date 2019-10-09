@@ -19,9 +19,15 @@ fn main() {
         .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
-    // let f = parse(" **apa");
+    let f = parse("{
+        let mut a: bool = true; 
+        let mut b: &mut bool = &mut a; 
+        let c: &mut bool = &mut b; 
+        **c = false; 
+        a
+        }");
     // let f = parse(contents.as_str());
-    // println!("Output = {:#?}" , f); // print parsed ast.
+    println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
     // interp_ast(f.unwrap().1);
     // let mut a = 10;

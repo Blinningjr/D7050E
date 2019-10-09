@@ -401,6 +401,6 @@ fn test_parse_borrow_mut() {
     let test1 = parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}"));
     assert_eq!((test1.unwrap().0).fragment, "");
 
-    let test2 = parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; a}"));
+    let test2 = parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c: &mut bool = &mut b; **c = false; a}"));
     assert_eq!((test2.unwrap().0).fragment, "");
 }
