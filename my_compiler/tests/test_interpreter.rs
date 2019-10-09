@@ -274,7 +274,7 @@ fn test_interp_mut() {
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; !a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; a =!a; a}")).unwrap().1);
     assert!(test2.is_ok());
     assert_eq!(test2.unwrap().1, Val::Bool(false));
 }
@@ -293,29 +293,20 @@ fn test_interp_mut_panic1() {
 
 
 /**
- *  Test interpreting mutabilety.
- */
-#[test]
-#[should_panic]
-fn test_interp_mut_panic2() {
-    let test1 = interp_ast(parse_expr(Span::new("{let &a: i32 = 10; a = a + 2;}")).unwrap().1);
-    assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12));
-}
-
-
-/**
  *  Test interpreting borrow.
  */
 #[test]
 fn test_interp_borrow() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: i32 = &a; a = a + 2; b}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; b }")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12));
+    assert_eq!(test1.unwrap().1, Val::Ident("a".to_string(), 0));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: bool = &a; a = !a; b}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: &bool = &a; *b}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::Bool(true));
+
+    let test3 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; c}")).unwrap().1);
+    assert_eq!(test3.unwrap().1, Val::Ident("a".to_string(), 0));
 }
 
 
@@ -324,12 +315,21 @@ fn test_interp_borrow() {
  */
 #[test]
 fn test_interp_borrow_mut() {
-    // &mut don't work and borrow in func call don't work.
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let mut b: i32 = &mut a; b = b + 2; a}")).unwrap().1);
+    // &mut don't work.
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12)); 
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: bool = &mut a; b = false; a}")).unwrap().1);
-    assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    // let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; a}")).unwrap().1);
+    // assert!(test2.is_ok());
+    // assert_eq!(test2.unwrap().1, Val::Bool(false));
+}
+
+/**
+ *  Test interpreting borrow mut for func.
+ */
+#[test]
+fn test_interp_func_borrow_mut() {
+    // borrow in func call don't work.
+    panic!("test_interp_func_borrow_mut not implemented");
 }

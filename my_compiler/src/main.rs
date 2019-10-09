@@ -19,9 +19,24 @@ fn main() {
         .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
-    // let f = parse(" while a < 10 { a = a + 2;}");
-    let f = parse(contents.as_str());
+    // let f = parse(" **apa");
+    // let f = parse(contents.as_str());
     // println!("Output = {:#?}" , f); // print parsed ast.
-    println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
+    // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
     // interp_ast(f.unwrap().1);
+    // let mut a = 10;
+    // let b = &mut a;
+    // *b = 1 ;
+    
+    // mut and borrow tests.
+    // let mut a: i32 = 10; a = a + 2; // funka
+    // let mut a: bool = true; a =!a; // funka 
+    // let a: i32 = 10; a = a + 2; // funka inte
+    // let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; //c //funka
+    // let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; //funka 
+    // let mut a: bool = true; let b: &bool = &a; // funka
+    // let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; // funka
+    // let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; &**c = &false; // funka inte
+    // let a = 10; let b = &a; let c = b +10; //funka
+    // print!("\n {:?} \n", c);
 }

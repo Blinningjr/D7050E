@@ -6,5 +6,6 @@ pub enum Prefix {
     Mut,
     Borrow,
     BorrowMut,
+    DeRef(i32),
     None,
 }

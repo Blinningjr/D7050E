@@ -25,8 +25,8 @@ pub enum Expr<'a> {
 
     UnOp(SpanOp<'a>, Box<SpanExpr<'a>>),
     BinOp(Box<SpanExpr<'a>>, SpanOp<'a>, Box<SpanExpr<'a>>),
-    Let(SpanPrefix<'a>, &'a str, SpanMyType<'a>, Box<SpanExpr<'a>>),
-    Assign(&'a str, Box<SpanExpr<'a>>),
+    Let(SpanPrefix<'a>, &'a str, SpanPrefix<'a>, SpanMyType<'a>, Box<SpanExpr<'a>>),
+    Assign(SpanPrefix<'a>, &'a str, Box<SpanExpr<'a>>),
     If(Box<SpanExpr<'a>>, Box<SpanExpr<'a>>,  Box<SpanExpr<'a>>),
 
     Body(Vec<SpanExpr<'a>>), 

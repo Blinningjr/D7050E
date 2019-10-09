@@ -186,11 +186,37 @@ fn parse_var_prefix(input: Span) -> IResult<Span, SpanPrefix> {
             preceded(multispace0, tag("&")),
             |_| (input, Prefix::Borrow)
         ),
+        parse_deref,
         map(
             tag(""),
             |_| (input, Prefix::None)
         ),
     ))(input)
+}
+
+
+fn parse_deref(input: Span) -> IResult<Span, SpanPrefix> {
+    let v = map(
+        preceded(multispace0, tag("*")),
+        |s| (s, Prefix::DeRef(1))
+    )(input);
+    match v {
+        Ok((s,_)) => {
+            let r = parse_deref(s);
+            match r {
+                Ok((s2, p2)) => {
+                    return Ok((s2, 
+                        match p2.1 {
+                            Prefix::DeRef(val) => (p2.0, Prefix::DeRef(val + 1)),
+                            _ => panic!("parse_deref"),
+                        }
+                    ));
+                },
+                Err(_) => return v,
+            }
+        },
+        Err(_) => return v,
+    }
 }
 
 
@@ -223,24 +249,26 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
                 preceded(multispace0, tag("mut")),
                 preceded(multispace0, alpha1), 
                 tag(":"),
+                parse_var_prefix,
                 parse_mytype, 
                 preceded(multispace0, tag("=")), 
                 parse_expr, 
                 preceded(multispace0, tag(";")),
             )),
-            |(_, _, i, _, t, _, r, _)| (input, Expr::Let((input, Prefix::Mut), i.fragment, t, Box::new(r)))
+            |(_, _, i, _, p, t, _, r, _)| (input, Expr::Let((input, Prefix::Mut), i.fragment, p, t, Box::new(r)))
         ),
         map(
             tuple((
                 preceded(multispace0, tag("let")), 
                 preceded(multispace0, alpha1), 
                 tag(":"),
+                parse_var_prefix,
                 parse_mytype, 
                 preceded(multispace0, tag("=")), 
                 parse_expr, 
                 preceded(multispace0, tag(";")),
             )),
-            |(_, i, _, t, _, r, _)| (input, Expr::Let((input, Prefix::None), i.fragment, t, Box::new(r)))
+            |(_, i, _, p, t, _, r, _)| (input, Expr::Let((input, Prefix::None), i.fragment, p, t, Box::new(r)))
         ),
     ))(input)
 }
@@ -251,15 +279,27 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
  */
 #[allow(dead_code)]
 fn parse_assign(input: Span) -> IResult<Span, SpanExpr> {
-    map(
-        tuple((
-            preceded(multispace0, alpha1), 
-            preceded(multispace0, tag("=")), 
-            preceded(multispace0, parse_expr), 
-            preceded(multispace0, tag(";")),
-        )),
-        |(i, _, r, _)| (input, Expr::Assign(i.fragment, Box::new(r)))
-    )(input)
+    alt (( 
+        map(
+            tuple((
+                parse_deref,
+                preceded(multispace0, alpha1), 
+                preceded(multispace0, tag("=")), 
+                parse_expr, 
+                preceded(multispace0, tag(";")),
+            )),
+            |(p, i, _, r, _)| (input, Expr::Assign(p, i.fragment, Box::new(r)))
+        ),
+        map(
+            tuple((
+                preceded(multispace0, alpha1), 
+                preceded(multispace0, tag("=")), 
+                parse_expr, 
+                preceded(multispace0, tag(";")),
+            )),
+            |(i, _, r, _)| (input, Expr::Assign((input, Prefix::None), i.fragment, Box::new(r)))
+        ),
+    ))(input)
 }
 
 
@@ -513,12 +553,12 @@ fn parse_var_with_type(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
-                parse_var_prefix,
                 preceded(multispace0, alpha1),
                 tag(":"),
+                parse_var_prefix,
                 parse_mytype,
             )),
         ),
-        |(p, i, _, t)| (input, Expr::VarWithType(p, i.fragment, t))
+        |(i, _, p, t)| (input, Expr::VarWithType(p, i.fragment, t))
     )(input)
 }

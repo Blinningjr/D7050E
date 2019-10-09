@@ -69,37 +69,6 @@ fn test_parse_var() {
 
 
 /**
- *  Test parsing ident with prefix.
- */
-#[test]
-fn test_parse_var_with_prefix() {
-    let test1 = parse_expr(Span::new(" &apa"));
-    assert!(test1.is_ok());
-    assert_eq!((test1.unwrap().0).fragment, "");
-
-    let test3 = parse_expr(Span::new("mut koskos"));
-    assert!(test3.is_ok());
-    assert_eq!((test3.unwrap().0).fragment, "");
-
-    let test4 = parse_expr(Span::new("&mut koskos"));
-    assert!(test4.is_ok());
-    assert_eq!((test4.unwrap().0).fragment, "");
-
-    let test5 = parse_expr(Span::new("&apa: bool"));
-    assert!(test5.is_ok());
-    assert_eq!((test5.unwrap().0).fragment, "");
-
-    let test6 = parse_expr(Span::new("mut apa: bool"));
-    assert!(test6.is_ok());
-    assert_eq!((test6.unwrap().0).fragment, "");
-    
-    let test7 = parse_expr(Span::new("&mut apa: bool"));
-    assert!(test7.is_ok());
-    assert_eq!((test7.unwrap().0).fragment, "");
-}
-
-
-/**
  *  Test parsing parentheses.
  */
 #[test]
@@ -235,21 +204,6 @@ fn test_parse_let() {
 
 
 /**
- *  Test parsing let statments with prefix.
- */
-#[test]
-fn test_parse_mut_let() {
-    let test1 = parse_expr(Span::new(" let mut apa: i32 = 20;"));
-    assert!(test1.is_ok());
-    assert_eq!((test1.unwrap().0).fragment, "");
-
-    let test3 = parse_expr(Span::new("let mut apa: bool = true;"));
-    assert!(test3.is_ok());
-    assert_eq!((test3.unwrap().0).fragment, "");
-}
-
-
-/**
  *  Test parsing if statments.
  */
 #[test]
@@ -362,4 +316,91 @@ fn test_parse_var_with_type() {
     let test1 = parse_expr(Span::new("sadsd: bool"));
     assert!(test1.is_ok());
     assert_eq!((test1.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing let statments with prefix.
+ */
+#[test]
+fn test_parse_prefix_let() {
+    let test1 = parse_expr(Span::new(" let mut apa: i32 = 20;"));
+    assert!(test1.is_ok());
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("let mut apa: bool = true;"));
+    assert!(test2.is_ok());
+    assert_eq!((test2.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("let b: &i32 = &a;"));
+    assert!(test3.is_ok());
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new("let b: &mut i32 = &mut a;"));
+    assert!(test4.is_ok());
+    assert_eq!((test4.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing ident with prefix.
+ */
+#[test]
+fn test_parse_var_with_prefix() {
+    let test1 = parse_expr(Span::new(" &apa"));
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test3 = parse_expr(Span::new("mut koskos"));
+    assert_eq!((test3.unwrap().0).fragment, "");
+
+    let test4 = parse_expr(Span::new("&mut koskos"));
+    assert_eq!((test4.unwrap().0).fragment, "");
+
+    let test5 = parse_expr(Span::new(" *apa"));
+    assert_eq!((test5.unwrap().0).fragment, "");
+
+    let test6 = parse_expr(Span::new(" **apa"));
+    assert_eq!((test6.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parsing type with prefix.
+ */
+#[test]
+fn test_parse_type_with_prefix() {
+    let test1 = parse_expr(Span::new("apa: & bool"));
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("apa: mut i32"));
+    assert_eq!((test2.unwrap().0).fragment, "");
+    
+    let test3 = parse_expr(Span::new("apa: &mut bool"));
+    assert_eq!((test3.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parse borrow.
+ */
+#[test]
+fn test_parse_borrow() {
+    let test1 = parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; b }"));
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("{let mut a: bool = true; let b: &bool = &a; *b}"));
+    assert_eq!((test2.unwrap().0).fragment, "");
+}
+
+
+/**
+ *  Test parse borrow mut.
+ */
+#[test]
+fn test_parse_borrow_mut() {
+    let test1 = parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}"));
+    assert_eq!((test1.unwrap().0).fragment, "");
+
+    let test2 = parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; a}"));
+    assert_eq!((test2.unwrap().0).fragment, "");
 }

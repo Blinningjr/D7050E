@@ -37,7 +37,7 @@ impl<'a> Scope<'a> {
             _ => Err(EnvError),
         }
     }
-    fn store_v(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<(Prefix, Val)> {
+    fn store_v(&mut self, key: &str, val: Val, prefix: Prefix) -> Option<(Prefix, Val)> {
         self.mem_var.insert(key.to_string(), (prefix, val.clone()))
     }
     fn store_f(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
@@ -45,6 +45,9 @@ impl<'a> Scope<'a> {
     }
     fn get_prev(&mut self) -> i32 {
         self.prev
+    }
+    fn get_return(&mut self) -> i32 {
+        self.return_scope
     }
 }
 
@@ -73,10 +76,17 @@ impl<'a> Env<'a> {
         self.scopes.pop();
     }
     pub fn store_var(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<(Prefix, Val)> {
-        let res = self.load_var(key);
+        let res = self.load_var(key, 0);
         match res {
             Ok(_) => panic!("store_var {:?} {:?}", key, val),
-            Err(_) =>  self.scopes[self.scope_pos as usize].store_v(key, val, prefix),
+            Err(_) =>  {
+                let mut value = val.clone();
+                match val {
+                    Val::Ident(i, _) => value = Val::Ident(i.clone(), self.get_var_scope(&i)),
+                    _ => (),
+                }
+                return self.scopes[self.scope_pos as usize].store_v(key, value, prefix)
+            },
         }
     }
     pub fn store_func(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
@@ -86,20 +96,42 @@ impl<'a> Env<'a> {
             Err(_) => self.scopes[self.scope_pos as usize].store_f(key, func),
         }
     }
-    pub fn load_var(&mut self, key: &str) -> Result<Val> {
-        let mut pos = self.scope_pos;
+    pub fn load_var(&mut self, key: &str, numderef: i32) -> Result<Val> {
+        self.help_load_var(key, numderef, self.scope_pos)
+    }
+    fn help_load_var(&mut self, key: &str, numderef: i32, pos: i32 ) -> Result<Val> {
+        if pos >= 0 {
+            let res = self.scopes[pos as usize].load_v(key);
+            match res {
+                Ok(tup) => {
+                    if numderef > 0 {
+                        match tup.1 {
+                            Val::Ident(k, p) => return self.help_load_var(&k, numderef -1, p),
+                            _ => panic!("help_load_var"),
+                        };
+                    }
+                    return Ok(tup.1);
+                },
+                _ => {
+                    let p = self.scopes[pos as usize].get_prev();
+                    return self.help_load_var(key, numderef, p);
+                },
+            }
+        }
+        Err(EnvError)
+    }
+    pub fn get_var_value(&mut self, key: &str, scope: i32) -> Result<Val> {
+        let mut pos = scope;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
                 Ok(tup) => {
-                        match tup.1 {
-                            Val::Ident(s) => return self.load_var(&s),
-                            _ => return Ok(tup.1),
-                        };
-                    },
-                _ => {
-                    pos = self.scopes[pos as usize].get_prev();
+                    match tup.1 {
+                        Val::Ident(i, n) => return self.get_var_value(&i, n),
+                        _ => return Ok(tup.1),
+                    }
                 },
+                _ => pos = self.scopes[pos as usize].get_prev(),
             }
         }
         Err(EnvError)
@@ -121,24 +153,45 @@ impl<'a> Env<'a> {
         } 
         Err(EnvError)
     }
-    pub fn assign_var(&mut self, key: &'a str, val: Val) -> Option<(Prefix, Val)> {
+    pub fn assign_var(&mut self, key: &str, val: Val, numderef: i32) -> Option<(Prefix, Val)> {
+        self.help_assign_var(key, val, self.scope_pos, numderef)
+    }
+    fn help_assign_var(&mut self, key: &str, val: Val, pos: i32,  numderef: i32) -> Option<(Prefix, Val)> {
+        if pos >= 0 {
+            let res = self.scopes[pos as usize].load_v(key);
+            match res {
+                Ok(tup) => {
+                    if numderef > 0 {
+                        match tup.1 {
+                            Val::Ident(k, p) => return self.help_assign_var(&k, val, p, numderef -1),
+                            _ => panic!("help_assign_var"),
+                        };
+                    }
+                    match tup.0 {
+                        Prefix::Mut => return self.scopes[pos as usize].store_v(key, val, tup.0),
+                        _ => panic!("Can't help_assign_var none mut var"),
+                    }
+                },
+                _ => {
+                    let p = self.scopes[pos as usize].get_prev();
+                    return self.help_assign_var(key, val, p, numderef);
+                },
+            }
+        }
+        panic!("help_load_var");
+    }
+    fn get_var_scope(&mut self, key: &str) -> i32 {
         let mut pos = self.scope_pos;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
-                Ok(tup) => {
-                    match tup.0 {
-                        Prefix::BorrowMut => return self.scopes[pos as usize].store_v(key, val, tup.0),
-                        Prefix::Mut => return self.scopes[pos as usize].store_v(key, val, tup.0),
-                        Prefix::Borrow => panic!("Can't assign_var to none mut var value"),
-                        Prefix::None => panic!("Can't assign_var to none mut value value"),
-                    }
-                },
-                _ => {
-                    pos = self.scopes[pos as usize].get_prev();
-                },
+                Ok(tup) => return pos,
+                _ => pos = self.scopes[pos as usize].get_return(),
             }
         } 
-        panic!("assign_var");
+        panic!("get_var_scope");
+    }
+    pub fn get_scope_pos(&mut self) -> i32 {
+        self.scope_pos
     }
 }

@@ -27,9 +27,13 @@ pub type SpanVal<'a> = (SpanExpr<'a>, Val);
 /** 
  *  Get i32 value from Val.
 */
-fn get_int(v: Val) -> Result<i32> {
+fn get_int<'a>(v: Val, env: &mut Env<'a>) -> Result<i32> {
     match v {
         Val::Num(i) => Ok(i),
+        Val::Ident(k, p) => {
+            let val = env.get_var_value(&k, p)?;
+            return get_int(val, env);
+        },
         _ => panic!("get_int"),
     }
 }
@@ -38,9 +42,13 @@ fn get_int(v: Val) -> Result<i32> {
 /** 
  *  Get bool value from Val.
 */
-fn get_bool(v: Val) -> Result<bool> {
+fn get_bool<'a>(v: Val, env: &mut Env<'a>) -> Result<bool> {
     match v {
         Val::Bool(b) => Ok(b),
+        Val::Ident(k, p) => {
+            let val = env.get_var_value(&k, p)?;
+            return get_bool(val, env);
+        },
         _ => panic!("get_bool"),
     }
 }
@@ -69,14 +77,38 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::Bool(i) => Ok((e, Val::Bool(i))),
         Expr::UnOp(_, _) => interp_unop(e, env),
         Expr::BinOp(_, _, _) => interp_binop(e, env),
-        Expr::Let(_, _, _, _) => interp_let(e, env),
-        Expr::Assign(_, _) => interp_assign(e, env),
+        Expr::Let(_, _, _, _, _) => interp_let(e, env),
+        Expr::Assign(_, _, _) => interp_assign(e, env),
+        Expr::Var(_, _) => interp_var(e, env),
+        Expr::If(_, _, _) => interp_if(e, env),
+        Expr::While(_, _) => interp_while(e, env),
+        Expr::FuncCall(_, _) => interp_func_call(e, env),
+        Expr::Func(i, _, _, _) => {env.store_func(i, e.1.clone()); Ok((e, Val::Empty))},
+        Expr::Funcs(_) => interp_funcs(e, env),
+        Expr::Body(_) => interp_body(e, env),
+        _ => panic!("interp_expr"),
+    }
+}
+
+
+/** 
+ *  Interprets var expresion.
+*/
+fn interp_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+    match (e.1).clone() {
         Expr::Var(p, s) => {
             match p.1 {
-                Prefix::Borrow => Ok((e, Val::Ident(s.to_string()))),
-                Prefix::BorrowMut => Ok((e, Val::Ident(s.to_string()))),
+                Prefix::Borrow => Ok((e, Val::Ident(s.to_string(), -1))),
+                Prefix::BorrowMut => Ok((e, Val::Ident(s.to_string(), -1))),
+                Prefix::DeRef(n) => {
+                    let t = env.load_var(s, n);
+                    if t.is_err() {
+                        panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
+                    }
+                    return Ok((e, t?));
+                },
                 _ => {
-                    let t = env.load_var(s);
+                    let t = env.load_var(s, 0);
                     if t.is_err() {
                         panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
                     }
@@ -84,12 +116,6 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                 },
             }
         },
-        Expr::If(_, _, _) => interp_if(e, env),
-        Expr::While(_, _) => interp_while(e, env),
-        Expr::FuncCall(_, _) => interp_func_call(e, env),
-        Expr::Func(i, _, _, _) => {env.store_func(i, e.1.clone()); Ok((e, Val::Empty))},
-        Expr::Funcs(_) => interp_funcs(e, env),
-        Expr::Body(_) => interp_body(e, env),
         _ => panic!("interp_expr"),
     }
 }
@@ -134,69 +160,69 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             let rr = interp_expr(*rv, env)?.1;
             match op.1 {
                 Op::Add => Ok((e, Val::Num(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     +
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::Sub => Ok((e, Val::Num(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     -
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::Div => Ok((e, Val::Num(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     /
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::Multi => Ok((e, Val::Num(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     *
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::Mod => Ok((e, Val::Num(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     %
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::LessEqThen => Ok((e, Val::Bool(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     <=
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::LargEqThen => Ok((e, Val::Bool(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     >=
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::LessThen => Ok((e, Val::Bool(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     <
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::LargThen => Ok((e, Val::Bool(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     >
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::Equal => Ok((e, Val::Bool(
-                    get_int(lr)?
+                    get_int(lr, env)?
                     ==
-                    get_int(rr)?
+                    get_int(rr, env)?
                 ))),
                 Op::And => Ok((e, Val::Bool(
-                    get_bool(lr)?
+                    get_bool(lr, env)?
                     &&
-                    get_bool(rr)?
+                    get_bool(rr, env)?
                 ))),
                 Op::Or => Ok((e, Val::Bool(
-                    get_bool(lr)?
+                    get_bool(lr, env)?
                     ||
-                    get_bool(rr)?
+                    get_bool(rr, env)?
                 ))),
                 Op::NotEq => Ok((e, Val::Bool(
                     match lr {
-                        Val::Bool(b) => b != get_bool(rr)?,
-                        Val::Num(v) => v != get_int(rr)?,
+                        Val::Bool(b) => b != get_bool(rr, env)?,
+                        Val::Num(v) => v != get_int(rr, env)?,
                         _ => panic!("interp_binop"),
                     }
                 ))),
@@ -213,10 +239,11 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 */
 fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
-        Expr::Let(p, s, _t, value) => {
+        Expr::Let(p, s, _, _t, value) => {
             let val = match p.1 {
                 Prefix::Borrow => panic!("interp_let Prefix::Borrow"),
                 Prefix::BorrowMut => panic!("interp_let Prefix::BorrowMut"),
+                Prefix::DeRef(_) => panic!("interp_let Prefix::DeRef"),
                 _ => interp_expr(*value, env)?,
             };
             env.store_var(s, (val.1).clone(), p.1);
@@ -232,9 +259,12 @@ fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 */
 fn interp_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
-        Expr::Assign(s, value) => {
+        Expr::Assign(p, s, value) => {
             let val = interp_expr(*value, env)?;
-            env.assign_var(s, (val.1).clone());
+            match p.1 {
+                Prefix::DeRef(n) => env.assign_var(s, (val.1).clone(), n),
+                _ => env.assign_var(s, (val.1).clone(), 0),
+            };
             return Ok(val);
         },
         _ => panic!("interp_assign"),
@@ -250,7 +280,7 @@ fn interp_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::If(b, ib, eb) => {
             env.crate_scope();
             let res;
-            if get_bool(interp_expr(*b, env)?.1)? {
+            if get_bool(interp_expr(*b, env)?.1, env)? {
                 match ib.1.clone() {
                     Expr::Body(_) => res = interp_body(*ib, env),
                     _ => panic!("interp_if"),
@@ -312,11 +342,11 @@ fn interp_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::While(expr, b) => {
             let mut res = Ok((e.clone(), Val::Empty));
-            let mut w = get_bool(interp_expr(*expr.clone(), env)?.1)?;
+            let mut w = get_bool(interp_expr(*expr.clone(), env)?.1, env)?;
             while w {
                 env.crate_scope();
                 res = interp_body( *b.clone(), env);
-                w = get_bool(interp_expr(*expr.clone(), env)?.1)?;
+                w = get_bool(interp_expr(*expr.clone(), env)?.1, env)?;
                 env.pop_scope();
             }
             return res;
