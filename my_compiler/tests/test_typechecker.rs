@@ -105,3 +105,22 @@ fn test_typecheck_binop() {
     let test15 = typecheck_ast(parse_expr(Span::new("4 >= 4")).unwrap().1); 
     assert_eq!(test15.unwrap().1, MyType::Boolean); 
 }
+
+
+/**
+ *  Test tycpecheck let.
+ */
+#[test]
+fn test_typecheck_let() {
+    let test1 = typecheck_ast(parse_expr(Span::new(" let apa: i32 = 20;")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("let apa: bool = true;")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Boolean);
+
+    let test1 = typecheck_ast(parse_expr(Span::new("let apa: bool = false;")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Boolean);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("let apa: i32=20 + 20- 2 * 20;")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Int32);
+}

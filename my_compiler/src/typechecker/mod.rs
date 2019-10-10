@@ -30,6 +30,7 @@ fn typecheck_expr<'a>(e: SpanExpr<'a>) -> IResult<SpanExpr, MyType> {
         Expr::Bool(_) => Ok((e, MyType::Boolean)),
         Expr::UnOp(_, _) => typecheck_unop(e),
         Expr::BinOp(_, _, _) => typecheck_binop(e),
+        Expr::Let(_, _, _, _, _) => typecheck_let(e),
         _ => panic!("typecheck_expr {:#?}", e),
     }
 }
@@ -89,6 +90,20 @@ fn typecheck_binop<'a>(e: SpanExpr<'a>) -> IResult<SpanExpr, MyType> {
             }
         },
         _ => panic!("typecheck_binop"),
+    }
+}
+
+
+/** 
+ *  Typecheck let in ast.
+*/
+fn typecheck_let<'a>(e: SpanExpr<'a>) -> IResult<SpanExpr, MyType> {
+    match (e.1).clone() {
+        Expr::Let(_, _, _, t, v) => {
+            let vt = typecheck_expr(*v)?.1;
+            return Ok((e, check_if_same_type(t.1, vt)));
+        },
+        _ => panic!("typecheck_unop"),
     }
 }
 
