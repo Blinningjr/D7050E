@@ -185,13 +185,13 @@ impl<'a> Env<'a> {
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
-                Ok(tup) => return pos,
+                Ok(_) => return pos,
                 _ => pos = self.scopes[pos as usize].get_return(),
             }
         } 
         panic!("get_var_scope");
     }
-    pub fn get_scope_pos(&mut self) -> i32 {
-        self.scope_pos
-    }
+    // pub fn get_scope_pos(&mut self) -> i32 {
+    //     self.scope_pos
+    // }
 }

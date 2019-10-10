@@ -205,9 +205,11 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     get_int(rr, env)?
                 ))),
                 Op::Equal => Ok((e, Val::Bool(
-                    get_int(lr, env)?
-                    ==
-                    get_int(rr, env)?
+                    match lr {
+                        Val::Bool(b) => b == get_bool(rr, env)?,
+                        Val::Num(v) => v == get_int(rr, env)?,
+                        _ => panic!("interp_binop"),
+                    }
                 ))),
                 Op::And => Ok((e, Val::Bool(
                     get_bool(lr, env)?

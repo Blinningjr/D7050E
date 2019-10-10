@@ -123,6 +123,10 @@ fn test_interp_binop() {
     let test14 = interp_ast(parse_expr(Span::new("false != true")).unwrap().1);
     assert!(test14.is_ok());
     assert_eq!(test14.unwrap().1, Val::Bool(true));
+
+    let test15 = interp_ast(parse_expr(Span::new("true == true")).unwrap().1);
+    assert!(test15.is_ok());
+    assert_eq!(test15.unwrap().1, Val::Bool(true));
 }
 
 

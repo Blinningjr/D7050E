@@ -177,6 +177,14 @@ fn test_parse_binop() {
     let test13 = parse_expr(Span::new(" 4 >= -2"));
     assert!(test13.is_ok());
     assert_eq!((test13.unwrap().0).fragment, "");
+
+    let test14 = parse_expr(Span::new(" true == false"));
+    assert!(test14.is_ok());
+    assert_eq!((test14.unwrap().0).fragment, "");
+
+    let test15 = parse_expr(Span::new(" true != false"));
+    assert!(test15.is_ok());
+    assert_eq!((test15.unwrap().0).fragment, "");
 }
 
 
