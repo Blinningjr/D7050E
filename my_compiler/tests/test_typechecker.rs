@@ -20,7 +20,7 @@ use crate::typechecker::{
 
 
 /**
- *  Test tycpecheck singel int.
+ *  Test typecheck singel int.
  */
 #[test]
 fn test_typecheck_int() {
@@ -30,7 +30,7 @@ fn test_typecheck_int() {
 
 
 /**
- *  Test tycpecheck singel bool.
+ *  Test typecheck singel bool.
  */
 #[test]
 fn test_typecheck_bool() {
@@ -43,7 +43,7 @@ fn test_typecheck_bool() {
 
 
 /**
- *  Test tycpecheck unop.
+ *  Test typecheck unop.
  */
 #[test]
 fn test_typecheck_unop() {
@@ -56,7 +56,7 @@ fn test_typecheck_unop() {
 
 
 /**
- *  Test tycpecheck binop.
+ *  Test typecheck binop.
  */
 #[test]
 fn test_typecheck_binop() {
@@ -108,7 +108,7 @@ fn test_typecheck_binop() {
 
 
 /**
- *  Test tycpecheck let.
+ *  Test typecheck let.
  */
 #[test]
 fn test_typecheck_let() {
@@ -123,4 +123,131 @@ fn test_typecheck_let() {
 
     let test2 = typecheck_ast(parse_expr(Span::new("let apa: i32=20 + 20- 2 * 20;")).unwrap().1);
     assert_eq!(test2.unwrap().1, MyType::Int32);
+}
+
+
+/**
+ *  Test typecheck assign.
+ */
+#[test]
+fn test_typecheck_assign() {
+    let test1 = typecheck_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2;}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("{let mut a: bool = true;}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Boolean);
+}
+
+
+/**
+ *  Test typecheck var.
+ */
+#[test]
+fn test_typecheck_var() {
+    let test1 = typecheck_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2; a}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("{let mut a: bool = true; a}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Boolean);
+}
+
+
+/**
+ *  Test typecheck if.
+ */
+#[test]
+fn test_typecheck_if() {
+    let test1 = typecheck_ast(parse_expr(Span::new("if 1 < 10 {12} else {false}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::NoType);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("if 1 > 10 {true} else {false}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::NoType);
+}
+
+
+/**
+ *  Test typecheck while.
+ */
+#[test]
+fn test_typecheck_while() {
+    let test1 = typecheck_ast(parse_expr(Span::new("{let mut a: i32 = 0; while a < 10 {a = a +1;} a}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+
+    let test2 = typecheck_ast(parse_expr(Span::new("{let mut a: bool = true; while a {a = false;} a}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Boolean);
+}
+
+
+/**
+ *  Test typecheck func.
+ */
+#[test]
+fn test_typecheck_func() {
+    let test1 = typecheck_ast(parse_expr(Span::new(
+        "   {
+            fn tio(i: i32) -> i32 {
+                i
+            }
+            tio(2)
+            }
+        ")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+
+    let test2 = typecheck_ast(parse_expr(Span::new(
+        "   {
+            fn tio(i: i32) -> i32 {
+                return 10;
+                i
+            }
+            tio(2)
+            }
+        ")).unwrap().1);
+    assert_eq!(test2.unwrap().1, MyType::Int32);
+}
+
+
+/**
+ *  Test typecheck recursiv func.
+ */
+#[test]
+fn test_interp_recursiv_func() {
+    let test1 = typecheck_ast(parse_expr(Span::new(
+        "   {
+            fn tio(i: i32) -> i32 {
+                if i < 50 {
+                    return tio(i + 1);
+                } 
+                else{
+                    return i;       
+                }
+            }
+            tio(2)
+            }
+        ")).unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::Int32);
+}
+
+
+/**
+ *  Test typechecking ast.
+ */
+#[test]
+fn test_typecheck_ast() {
+    let test1 = typecheck_ast(parse(
+        "  
+        fn tio(i: i32) -> i32 {
+            if i < 50 {
+                return tio(i + 1);
+            } 
+            else{
+                return i;       
+            }
+        }
+
+        fn main() {
+            let a: i32 = 2; 
+            tio(2);
+        }
+        ").unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::NoType);
 }

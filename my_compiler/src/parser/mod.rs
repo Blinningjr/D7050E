@@ -31,7 +31,7 @@ use nom::{
 use nom_locate::LocatedSpan;
 pub type Span<'a> = LocatedSpan<&'a str>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Error<'a>(Span<'a>, Option<Span<'a>>, ErrorKind);
 pub type IResult<'a, I, O, E = Error<'a>> = Result<(I, O), Err<E>>;
 
@@ -45,7 +45,7 @@ impl<'a> error::ParseError<Span<'a>> for Error<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ErrorKind {
     ParseIntError(std::num::ParseIntError),
     Nom(error::ErrorKind),

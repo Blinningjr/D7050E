@@ -12,7 +12,7 @@ use std::{
  *  src: https://doc.rust-lang.org/std/str/trait.FromStr.html
  */
 pub type Result<T> = std::result::Result<T, EnvError>;
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct EnvError;
 
 

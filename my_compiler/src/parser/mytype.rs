@@ -6,5 +6,5 @@ pub enum MyType {
     Int32,
     Boolean,
     NoType,
-    // None,
+    ReturnType(Box<MyType>),
 }

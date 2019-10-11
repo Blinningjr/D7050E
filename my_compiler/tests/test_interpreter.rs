@@ -135,7 +135,7 @@ fn test_interp_binop() {
  */
 #[test]
 fn test_interp_let_assign_var() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2;}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2; a}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Num(12));
 
