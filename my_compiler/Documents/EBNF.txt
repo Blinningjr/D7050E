@@ -11,7 +11,8 @@
     Int32 = "i32" ;
     Boolean = "bool" ;
     NoType = ? white_space characters ? | [ "()" ] ;
-    MyType = Int32 | Boolean |  NoType ;
+    ReturnType = MyType;
+    MyType = Int32 | Boolean |  NoType | ReturnType ;
 
 
 (* Defenition of Op *)
@@ -32,20 +33,28 @@
     Op = Add | Sub ¦ Div ¦ Multi | Mod | And | Or | Not | Equal 
         | NotEq | LessThen |  LargThen | LessEqThen | LargEqThen ;
 
+(* Defenition of Prefix *)
+    Mut = "mut" ;
+    Borrow = "&" ;
+    BorrowMut = "&mut" ;
+    DeRef = "*", { "*" } ;
+    None = "" ;
+    Prefix = Mut | Borrow | BorrowMut | DeRef | None ;
+
 
 (* Defenition of Expr *)
     Num = int ;
     Bool = "true" | "false" ;
-    Var = ident ;
-    VarWithType = ident, ":", MyType ;
+    Var = Prefix, ident ;
+    VarWithType = ident, ":", Prefix, MyType ;
     UnOp = Op, Expr ;
     BinOp = Expr, Op, Expr ;
-    Let = ident, ":", MyType, "=", Expr, ";" ;
-    Assign = ident, "=",  Expr, ";" ;
+    Let = Prefix, ident, ":", Prefix, MyType, "=", Expr, ";" ;
+    Assign = Prefix, ident, "=",  Expr, ";" ;
     If = "if", Expr, Body, [ "else", Body ] ; 
     Body = "{", {Expr}, "}" ;
     While = "while", Expr, Body ;
-    Func = "Fn", ident, "(", { VarWithType }, ")", [ "->", MyType ], Body ;
+    Func = "Fn", ident, "(", [ VarWithType, { ",", VarWithType } ], ")", [ "->", MyType ], Body ;
     Return = "return", Expr, ";" ;
     FuncCall = ident, "(", [ Expr, { ",", Expr } ], ")", [ ";" ] ;
     Funcs =  { Func } ;
