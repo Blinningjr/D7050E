@@ -9,6 +9,8 @@ mod parser;
 mod interpreter;
 #[path = "typechecker/mod.rs"]
 mod typechecker;
+#[path = "borrowchecker/mod.rs"]
+mod borrowchecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
@@ -45,4 +47,9 @@ fn main() {
     // let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; &**c = &false; // funka inte
     // let a = 10; let b = &a; let c = b +10; //funka
     // print!("\n {:?} \n", c);
+
+    let mut a = &mut 10;
+    let mut b = &mut a;
+    let mut c = &mut a;
+    // let v = &mut a + &mut b;
 }
