@@ -16,7 +16,6 @@ struct Scope<'a> {
     mem_func: HashMap<String, (Vec<MyType>, MyType)>,
     mem_func_to_check: Vec<Expr<'a>>,
     prev: i32,
-    return_scope: i32,
     
 }
 
@@ -25,13 +24,12 @@ impl<'a> Scope<'a> {
     /**
      *  Creates a new scope.
      */
-    fn new(prev_pos: i32, return_pos: i32) -> Scope<'a> {
+    fn new(prev_pos: i32) -> Scope<'a> {
         Scope {
             mem_var: HashMap::new(),
             mem_func: HashMap::new(),
             mem_func_to_check: Vec::new(),
             prev: prev_pos,
-            return_scope: return_pos,
         }
     }
 
@@ -77,18 +75,11 @@ impl<'a> Scope<'a> {
         self.prev
     }
 
-    /**
-     *  Gets return scope.
-     */
-    fn get_return(&mut self) -> i32 {
-        self.return_scope
-    }
-
     fn get_f(&mut self) -> Option<Expr<'a>> {
         self.mem_func_to_check.pop()
     }
 
-    fn get_f_len(&mut self) -> i32 {
+    fn get_fs_len(&mut self) -> i32 {
         self.mem_func_to_check.len() as i32
     }
 }
@@ -104,7 +95,6 @@ impl<'a> Scope<'a> {
 pub struct Env<'a> {
     scopes: Vec<Scope<'a>>,
     scope_pos: i32,
-    return_pos: i32,
 }
 
 impl<'a> Env<'a> {
@@ -117,7 +107,6 @@ impl<'a> Env<'a> {
         Env {
             scopes: Vec::new(),
             scope_pos: -1,
-            return_pos: -1,
         }
     }
 
@@ -126,9 +115,8 @@ impl<'a> Env<'a> {
      *  Sets the new scope position and return scope position.
      */
     pub fn crate_scope(&mut self) -> () {
-        self.scopes.push(Scope::new(self.scope_pos, self.return_pos));
+        self.scopes.push(Scope::new(self.scope_pos));
         self.scope_pos = (self.scopes.len() as i32) -1;
-        self.return_pos = self.scope_pos;
     }
 
     /**
@@ -136,8 +124,7 @@ impl<'a> Env<'a> {
      *  Also sets the correct scope position and return scope position.
      */
     pub fn pop_scope(&mut self) -> () {
-        self.scope_pos = self.scopes[self.scope_pos as usize].return_scope;
-        self.return_pos = self.scope_pos;
+        self.scope_pos = self.scopes[self.scope_pos as usize].prev;
         self.scopes.pop();
     }
 
@@ -200,8 +187,7 @@ impl<'a> Env<'a> {
             let res = self.scopes[pos as usize].load_f(key);
             match res {
                 Ok(_) => {
-                    self.return_pos = self.scope_pos;
-                    self.scope_pos = pos; 
+                    // self.scope_pos = pos; 
                     return res
                 },
                 _ => {
@@ -212,8 +198,8 @@ impl<'a> Env<'a> {
         Err(EnvError)
     }
 
-    pub fn get_func_len(&mut self) -> i32 {
-        self.scopes[self.scope_pos as usize].get_f_len()
+    pub fn get_funcs_len(&mut self) -> i32 {
+        self.scopes[self.scope_pos as usize].get_fs_len()
     }
 
     pub fn get_func(&mut self) -> Option<Expr<'a>> {

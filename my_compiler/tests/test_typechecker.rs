@@ -186,7 +186,7 @@ fn test_typecheck_func() {
     let test1 = typecheck_ast(parse_expr(Span::new(
         "   {
             fn tio(i: i32) -> i32 {
-                i
+                return i;
             }
             tio(2)
             }
@@ -229,10 +229,10 @@ fn test_interp_recursiv_func() {
 
 
 /**
- *  Test typechecking ast.
+ *  Test typechecking funcs.
  */
 #[test]
-fn test_typecheck_ast() {
+fn test_typecheck_funcs() {
     let test1 = typecheck_ast(parse(
         "  
         fn tio(i: i32) -> i32 {

@@ -157,11 +157,13 @@ fn typecheck_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr
 fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     match (e.1).clone() {
         Expr::Body(es) => {
-            let mut res = Ok((e, MyType::NoType));
+            let mut res = Ok((e.clone(), MyType::NoType));
             for expr in es {
                 match expr.1 {
                     Expr::Return(v) => {
                         let val = typecheck_expr(*v, env)?;
+                        typecheck_funcs_in_list(e.clone(), env);
+                        env.pop_scope();
                         return match val.1 {
                             MyType::Int32 => Ok((val.0, MyType::ReturnType(Box::new(MyType::Int32)) )),
                             MyType::Boolean => Ok((val.0, MyType::ReturnType(Box::new(MyType::Boolean)) )),
@@ -172,12 +174,18 @@ fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
                     _ => {
                         res = typecheck_expr(expr, env);
                         match res.clone()?.1 {
-                            MyType::ReturnType(_) => return res,
+                            MyType::ReturnType(_) => {
+                                typecheck_funcs_in_list(e.clone(), env);
+                                env.pop_scope();
+                                return res;
+                            },
                             _ => (),
                         };
                     },
                 }
             }
+            typecheck_funcs_in_list(e.clone(), env);
+            env.pop_scope();
             return res;
         },
         _ => panic!("typecheck_body"),
@@ -196,18 +204,15 @@ fn typecheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<
             } 
 
             env.crate_scope();
-            let ib_res = typecheck_expr(*ib, env);
-            typecheck_funcs_in_list(e.clone(), env);
-            env.pop_scope();
+            let ib_res = typecheck_body(*ib, env);
+            
             env.crate_scope();
-            let eb_res = typecheck_expr(*eb, env);
-            typecheck_funcs_in_list(e.clone(), env);
-            env.pop_scope();
+            let eb_res = typecheck_body(*eb, env);
 
             match ib_res.clone()?.1 {
                 MyType::ReturnType(ibt) => {
                     match eb_res?.1 {
-                        MyType::ReturnType(ebt) => return Ok((e, check_if_same_type(*ibt, *ebt))),
+                        MyType::ReturnType(ebt) => return Ok((e, MyType::ReturnType(Box::new(check_if_same_type(*ibt, *ebt))))),
                         _ => return ib_res,
                     };
                 },
@@ -234,9 +239,7 @@ fn typecheck_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
                 panic!("typecheck_while while statment is not of type bool");
             }
             env.crate_scope();
-            let res = typecheck_expr(*b, env);
-            typecheck_funcs_in_list(e.clone(), env);
-            env.pop_scope();
+            let res = typecheck_body(*b, env);
             return res;
         },
         _ => panic!("typecheck_while"),
@@ -249,7 +252,7 @@ fn typecheck_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
 */
 fn add_func_to_typechecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     match (e.1).clone() {
-        Expr::Func(ident, param, return_type, body) => {
+        Expr::Func(ident, param, return_type, _) => {
             let mut t_param = Vec::new();
             let mut t_var = Vec::new();
             for v in param {
@@ -311,7 +314,7 @@ fn typecheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
             env.pop_scope();
             return Ok((e, MyType::NoType));
         },
-        _ => panic!("typecheck_body"),
+        _ => panic!("typecheck_funcs"),
     }
 }
 
@@ -320,39 +323,32 @@ fn typecheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
  *  Adds to list of func that need typechecking in ast.
 */
 fn typecheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
-    let l = env.get_func_len();
     let mut res = MyType::NoType;
-    while l > 0 {
+    while env.get_funcs_len() > 0 {
         let e;
         match env.get_func() {
             Some(expr) => e = expr,
-            _ => panic!("typecheck_func"),
+            _ => panic!("typecheck_funcs_in_list"),
         }
         match e.clone() {
             Expr::Func(ident, param, return_type, body) => {
-                let mut t_var = Vec::new();
+                env.crate_scope();
                 for v in param {
                     match v.1 {
                         Expr::VarWithType(_, i, t) => {
-                            t_var.push((i, t.clone().1));
+                            env.store_var(i, t.clone().1);
                         }
-                        _ => panic!("typecheck_func"),
+                        _ => panic!("typecheck_funcs_in_list"),
                     }
                 }
-                env.crate_scope();
-                for v in t_var {
-                    env.store_var(v.0, v.1);
-                }
-                let mut body_t = typecheck_expr(*body, env)?.1;
+                let mut body_t = typecheck_body(*body, env)?.1;
                 match body_t {
                     MyType::ReturnType(t) => body_t = *t,
                     _ => body_t = MyType::NoType,
                 }
                 res = check_if_same_type(return_type.1, body_t);
-                typecheck_funcs_in_list(expr.clone(), env);
-                env.pop_scope();
             },
-            _ => panic!("typecheck_func"),
+            _ => panic!("typecheck_funcs_in_list"),
         }
     }
     return Ok((expr, res));
@@ -374,14 +370,23 @@ fn check_if_bool(t: MyType) -> bool {
     }
 }
 
+fn check_if_notype(t: MyType) -> bool {
+    match t {
+        MyType::NoType => true,
+        _ => false,
+    }
+}
+
 
 fn check_if_same_type(lt: MyType, rt: MyType) -> MyType {
     if check_if_bool(lt.clone()) && check_if_bool(rt.clone()) {
         return MyType::Boolean;
-    } else if check_if_num(lt) && check_if_num(rt) {
+    } else if check_if_num(lt.clone()) && check_if_num(rt.clone()) {
+        return MyType::Int32;
+    } else if check_if_notype(lt.clone()) && check_if_notype(rt.clone()) {
         return MyType::Int32;
     }
-    panic!("check_if_same_type");
+    panic!("check_if_same_type ({:?} != {:?})", lt, rt)
 }
 
 
