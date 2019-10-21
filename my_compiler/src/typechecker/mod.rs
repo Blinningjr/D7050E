@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /**
  *  Imports from parser.
  */

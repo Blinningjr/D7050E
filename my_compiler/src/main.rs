@@ -48,8 +48,8 @@ fn main() {
     // let a = 10; let b = &a; let c = b +10; //funka
     // print!("\n {:?} \n", c);
 
-    let mut a = &mut 10;
-    let mut b = &mut a;
-    let mut c = &mut a;
+    let a = &mut 10; *a = 20; // funkar
+    // let mut b = &mut a;
+    // let mut c = &mut a;
     // let v = &mut a + &mut b;
 }

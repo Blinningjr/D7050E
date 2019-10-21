@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod enverror;
 use enverror::{Result, EnvError};
 

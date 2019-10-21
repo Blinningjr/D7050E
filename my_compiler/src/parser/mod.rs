@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate nom;
 
 pub mod op;

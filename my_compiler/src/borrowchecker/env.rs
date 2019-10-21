@@ -2,30 +2,7 @@ use std::collections::HashMap;
 
 use super::enverror::{EnvError, Result};
 use crate::parser::expr::Expr;
-use crate::parser::mytype::MyType;
-
-
-/** 
- * 
- * 
- * 
- * 
- * 
- * 
- *  TEMPORERY ENV
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
-*/
-
+use crate::parser::varprefix::Prefix;
 
 
 /** 
@@ -35,8 +12,8 @@ use crate::parser::mytype::MyType;
  */
 #[derive(Debug, PartialEq, Clone)]
 struct Scope<'a> {
-    mem_var: HashMap<String, MyType>,
-    mem_func: HashMap<String, (Vec<MyType>, MyType)>,
+    mem_var: HashMap<String, Prefix>,
+    mem_func: HashMap<String, (Vec<Prefix>, Prefix)>,
     mem_func_to_check: Vec<Expr<'a>>,
     prev: i32,
     
@@ -59,7 +36,7 @@ impl<'a> Scope<'a> {
     /**
      *  Loads variable with name "key" form scope.
      */
-    fn load_v(&mut self, key: &str) -> Result<MyType> {
+    fn load_v(&mut self, key: &str) -> Result<Prefix> {
         match self.mem_var.get(key) {
             Some(t) => Ok(t.clone()),
             _ => Err(EnvError),
@@ -69,7 +46,7 @@ impl<'a> Scope<'a> {
     /**
      *  Loads function with name "key" form scope.
      */
-    fn load_f(&mut self, key: &'a str) -> Result<(Vec<MyType>, MyType)> {
+    fn load_f(&mut self, key: &'a str) -> Result<(Vec<Prefix>, Prefix)> {
         match self.mem_func.get(key) {
             Some(ts) => Ok(ts.clone()),
             _ => Err(EnvError),
@@ -79,14 +56,14 @@ impl<'a> Scope<'a> {
     /**
      *  Stores variable to scope.
      */
-    fn store_v(&mut self, key: &str, t: MyType) -> Option<MyType> {
+    fn store_v(&mut self, key: &str, t: Prefix) -> Option<Prefix> {
         self.mem_var.insert(key.to_string(), t)
     }
 
     /**
      *  Stores function to scope.
      */
-    fn store_f(&mut self, key: &'a str, ts: Vec<MyType>, t: MyType, expr: Expr<'a>) -> Option<(Vec<MyType>, MyType)> {
+    fn store_f(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: Expr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
         self.mem_func_to_check.push(expr);
         self.mem_func.insert(key.to_string(), (ts, t))
     }
@@ -156,7 +133,7 @@ impl<'a> Env<'a> {
      *  Panic!: If there already exists a variable with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_var(&mut self, key: &'a str, t: MyType) -> Option<MyType> {
+    pub fn store_var(&mut self, key: &'a str, t: Prefix) -> Option<Prefix> {
         let res = self.load_var(key);
         match res {
             Ok(_) => panic!("store_var: {:?} {:?}", key, t),
@@ -169,7 +146,7 @@ impl<'a> Env<'a> {
      *  Panic!: If there already exists a function with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_func(&mut self, key: &'a str, ts: Vec<MyType>, t: MyType, expr: Expr<'a>) -> Option<(Vec<MyType>, MyType)> {
+    pub fn store_func(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: Expr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
         let res = self.load_func(key);
         match res {
             Ok(_) => panic!("store_func"),
@@ -180,14 +157,14 @@ impl<'a> Env<'a> {
     /**
      *  Loads the variable.
      */
-    pub fn load_var(&mut self, key: &str) -> Result<MyType> {
+    pub fn load_var(&mut self, key: &str) -> Result<Prefix> {
         self.help_load_var(key, self.scope_pos)
     }
 
     /**
      *  Helper function to load_var.
      */
-    fn help_load_var(&mut self, key: &str, pos: i32 ) -> Result<MyType> {
+    fn help_load_var(&mut self, key: &str, pos: i32 ) -> Result<Prefix> {
         if pos >= 0 {
             let res = self.scopes[pos as usize].load_v(key);
             match res {
@@ -204,7 +181,7 @@ impl<'a> Env<'a> {
     /**
      *  Loads function from current scope or one of it's previouse scopes.
      */
-    pub fn load_func(&mut self, key: &'a str) -> Result<(Vec<MyType>, MyType)> {
+    pub fn load_func(&mut self, key: &'a str) -> Result<(Vec<Prefix>, Prefix)> {
         let mut pos = self.scope_pos;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_f(key);
