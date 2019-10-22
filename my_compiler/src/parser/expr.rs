@@ -20,6 +20,8 @@ pub enum Expr<'a> {
     Bool(bool),
     // Type(SpanMyType<'a>),
 
+    Prefixed(SpanPrefix<'a>, Box<SpanExpr<'a>>),
+
     Var(SpanPrefix<'a>, &'a str),
     VarWithType(SpanPrefix<'a>, &'a str, SpanMyType<'a>), // onödig?
 

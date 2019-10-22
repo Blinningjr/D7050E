@@ -88,6 +88,7 @@ fn interp_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::Func(i, _, _, _) => {env.store_func(i, e.1.clone()); Ok((e, Val::Empty))},
         Expr::Funcs(_) => interp_funcs(e, env),
         Expr::Body(_) => interp_body(e, env),
+        Expr::Prefixed(_, _) => interp_prefixed(e, env),
         _ => panic!("interp_expr"),
     }
 }
@@ -437,5 +438,27 @@ fn interp_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             }
         },
         _ => panic!("interp_funcs"),
+    }
+}
+
+
+/** 
+ *  Interprets prefixed expresion.
+*/
+fn interp_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
+    match (e.1).clone() {
+        Expr::Prefixed(p, expr) => {
+            return interp_expr(*expr, env);
+            // match p.1 {
+            //     // Prefix::DeRef(n) => {
+            //     //     match (*expr).1 {
+            //     //         // Expr::Var(_, ident) => Ok((e, env.load_var(ident, n)?)),
+            //     //         // _ => panic!("interp_prefixed"),
+            //     //     }
+            //     // },
+            //     // _ => return interp_expr(*expr, env),
+            // }
+        },
+        _ => panic!("interp_prefixed"),
     }
 }
