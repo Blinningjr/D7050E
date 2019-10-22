@@ -1,4 +1,4 @@
-// #![allow(dead_code)]
+#![allow(dead_code)]
 
 /**
  *  Imports from parser.
@@ -43,6 +43,11 @@ fn borrowcheck_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
         Expr::Assign(_, _, _) => borrowcheck_assign(e, env),
         Expr::Var(_, _) => borrowcheck_var(e, env),
         Expr::Body(_) => borrowcheck_body(e, env),
+        Expr::If(_, _, _) => borrowcheck_if(e, env),
+        Expr::While(_, _) => borrowcheck_while(e, env),
+        Expr::Func(_, _, _, _) => add_func_to_borrowchecking_list(e, env),
+        Expr::FuncCall(_, _) => borrowcheck_func_call(e, env),
+        Expr::Funcs(_) => borrowcheck_funcs(e, env),
         _ => panic!("borrowcheck_expr {:#?}", e),
     }
 }
@@ -179,8 +184,8 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                 match expr.1 {
                     Expr::Return(v) => {
                         let val = borrowcheck_expr(*v, env)?;
-                        // typecheck_funcs_in_list(e.clone(), env);
-                        // env.pop_scope();
+                        borrowcheck_funcs_in_list(e.clone(), env);
+                        env.pop_scope();
                         return match val.1 {
                             Prefix::Borrow => Ok((e, Prefix::ReturnPrefix(Box::new(Prefix::Borrow)))),
                             Prefix::BorrowMut => Ok((e, Prefix::ReturnPrefix(Box::new(Prefix::BorrowMut)))),
@@ -194,8 +199,8 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                         let res = borrowcheck_expr(expr, env);
                         match res.clone()?.1 {
                             Prefix::ReturnPrefix(_) => {
-                                // typecheck_funcs_in_list(e.clone(), env);
-                                // env.pop_scope();
+                                borrowcheck_funcs_in_list(e.clone(), env);
+                                env.pop_scope();
                                 return res;
                             },
                             _ => (),
@@ -203,10 +208,183 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                     },
                 }
             }
-            // typecheck_funcs_in_list(e.clone(), env);
-            // env.pop_scope();
+            borrowcheck_funcs_in_list(e.clone(), env);
+            env.pop_scope();
             return Ok((e, Prefix::None));
         },
         _ => panic!("borrowcheck_body"),
     }
+}
+
+
+/** 
+ *  Borrowcheck if in ast.
+*/
+fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    match (e.1).clone() {
+        Expr::If(b, ib, eb) => {
+            let val = borrowcheck_expr(*b, env)?;
+            match val.1 {
+                Prefix::DeRef(_) => panic!("borrowcheck_if"),
+                Prefix::Mut => panic!("borrowcheck_if"),
+                Prefix::ReturnPrefix(_) => panic!("borrowcheck_if"),
+                _ => (),
+            }
+            let ib_r = borrowcheck_body(*ib, env)?;
+            let eb_r = borrowcheck_body(*eb, env)?;
+            match ib_r.1 {
+                Prefix::ReturnPrefix(ip) => {
+                    match eb_r.1 {
+                        Prefix::ReturnPrefix(ep) => {
+                                if ip != ep {
+                                    panic!("borrowcheck_if");
+                                }
+                                return Ok((e, *ip));
+                            },
+                        _ => return Ok((e, *ip)),
+                    }
+                },
+                _ => (),
+            };
+            match eb_r.1 {
+                Prefix::ReturnPrefix(_) => return Ok(eb_r),
+                _ => return Ok((e, Prefix::None)),
+            }
+        },
+        _ => panic!("borrowcheck_if"),
+    }
+}
+
+
+/** 
+ *  Borrowcheck while in ast.
+*/
+fn borrowcheck_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    match (e.1).clone() {
+        Expr::While(b, body)=> {
+            let val = borrowcheck_expr(*b, env)?;
+            match val.1 {
+                Prefix::DeRef(_) => panic!("borrowcheck_while"),
+                Prefix::Mut => panic!("borrowcheck_while"),
+                Prefix::ReturnPrefix(_) => panic!("borrowcheck_while"),
+                _ => (),
+            }
+            let body_r = borrowcheck_body(*body, env)?;
+            match body_r.1 {
+                Prefix::ReturnPrefix(_) => return Ok(body_r),
+                _ => return Ok((e, Prefix::None)),
+            }
+        },
+        _ => panic!("borrowcheck_while"),
+    }
+}
+
+
+/** 
+ *  Borrowcheck func in ast.
+*/
+fn add_func_to_borrowchecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    match (e.1).clone() {
+        Expr::Func(ident, param, _, _) => {
+            let mut t_param = Vec::new();
+            let mut t_var = Vec::new();
+            for v in param {
+                match v.1 {
+                    Expr::VarWithType(p, i, _) => {
+                        t_param.push(p.clone().1);
+                        t_var.push((i, p.clone().1));
+                    }
+                    _ => panic!("add_func_to_borrowchecking_list"),
+                }
+            }
+            env.store_func(ident, t_param, Prefix::None, e.clone().1);
+            return Ok((e, Prefix::None));
+        },
+        _ => panic!("add_func_to_borrowchecking_list"),
+    }
+}
+
+
+/** 
+ *  Borrowcheck func call in ast.
+*/
+fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    match (e.1).clone() {
+        Expr::FuncCall(i, param) => {
+            let temp = env.load_func(i);
+            let param_p;
+            let return_p;
+            match temp {
+                Ok(tup) => {param_p = tup.0; return_p = tup.1;},
+                _ => panic!("borrowcheck_func_call"),
+            };
+            if param_p.len() != param.len() {
+                panic!("borrowcheck_func_call");
+            }
+            let mut i = 0;
+            for p in param_p {
+                if p != borrowcheck_expr(param[i].clone(), env)?.1 {
+                    panic!("borrowcheck_func_call");
+                }
+                i = i + 1;
+            }
+            return Ok((e, return_p));
+        },
+        _ => panic!("borrowcheck_func_call"),
+    }
+}
+
+
+/** 
+ *  Borrowcheck funcs in ast.
+*/
+fn borrowcheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    match (e.1).clone() {
+        Expr::Funcs(es) => {
+            for expr in es {
+                add_func_to_borrowchecking_list(expr, env);
+            }
+
+            borrowcheck_funcs_in_list(e.clone(), env);
+            env.pop_scope();
+            return Ok((e, Prefix::None));
+        },
+        _ => panic!("borrowcheck_funcs"),
+    }
+}
+
+
+/** 
+ *  Adds to list of func that need borrowchecking in ast.
+*/
+fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
+    let mut res = Prefix::None;
+    while env.get_funcs_len() > 0 {
+        let e;
+        match env.get_func() {
+            Some(expr) => e = expr,
+            _ => panic!("borrowcheck_funcs_in_list"),
+        }
+        match e.clone() {
+            Expr::Func(ident, param, _, body) => {
+                env.crate_scope();
+                for v in param {
+                    match v.1 {
+                        Expr::VarWithType(p, i, _) => {
+                            env.store_var(i, p.clone().1);
+                        }
+                        _ => panic!("borrowcheck_funcs_in_list"),
+                    }
+                }
+                let mut body_p = borrowcheck_body(*body, env)?.1;
+                match body_p {
+                    Prefix::ReturnPrefix(p) => body_p = *p,
+                    _ => body_p = Prefix::None,
+                }
+                res = body_p;
+            },
+            _ => panic!("borrowcheck_funcs_in_list"),
+        }
+    }
+    return Ok((expr, res));
 }
