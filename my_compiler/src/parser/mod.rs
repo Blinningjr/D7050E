@@ -67,6 +67,7 @@ pub type SpanPrefix<'a> = (Span<'a>, Prefix);
 #[allow(dead_code)]
 pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
     alt((
+        // parse_funcs,
         parse_func,
         parse_while,
         parse_if,

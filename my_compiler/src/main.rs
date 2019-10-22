@@ -26,7 +26,7 @@ fn main() {
         let mut b: &mut bool = &mut a; 
         let c: &mut bool = &mut b; 
         **c = false; 
-        a
+        return a;
         }");
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
@@ -48,8 +48,11 @@ fn main() {
     // let a = 10; let b = &a; let c = b +10; //funka
     // print!("\n {:?} \n", c);
 
-    let a = &mut 10; *a = 20; // funkar
+    // let a = &mut 10; *a = 20; // funkar
     // let mut b = &mut a;
     // let mut c = &mut a;
     // let v = &mut a + &mut b;
+
+    let a = & 10;
+    print!("\n {:?} \n", a);
 }

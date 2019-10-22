@@ -42,6 +42,7 @@ fn borrowcheck_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
         Expr::Let(_, _, _, _, _) => borrowcheck_let(e, env),
         Expr::Assign(_, _, _) => borrowcheck_assign(e, env),
         Expr::Var(_, _) => borrowcheck_var(e, env),
+        Expr::Body(_) => borrowcheck_body(e, env),
         _ => panic!("borrowcheck_expr {:#?}", e),
     }
 }
