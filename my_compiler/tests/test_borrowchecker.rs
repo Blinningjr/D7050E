@@ -311,7 +311,7 @@ fn test_borrwocheck_var() {
     assert_eq!(test1.unwrap().1, Prefix::Borrow);
 
     let test2 = borrowcheck_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a;}")).unwrap().1);
-    assert_eq!(test2.unwrap().1, Prefix::None);
+    assert_eq!(test2.unwrap().1, Prefix::BorrowMut);
 
     let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = *a;}")).unwrap().1);
     assert_eq!(test3.unwrap().1, Prefix::Borrow);
@@ -358,4 +358,92 @@ fn test_borrowcheck_var_panic_3() {
 #[should_panic]
 fn test_borrowcheck_var_panic_4() {
     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &mut i32 = a;}")).unwrap().1);
+}
+
+
+/**
+ *  Test borrwocheck if.
+ */
+#[test]
+fn test_borrwocheck_if() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; if a == 10 {}}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, Prefix::None);
+
+    let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; if *a == 10 {}}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, Prefix::None);
+
+    let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; if *a == 10 {}}")).unwrap().1);
+    assert_eq!(test3.unwrap().1, Prefix::None);
+}
+
+
+/**
+ *  Test borrwocheck while.
+ */
+#[test]
+fn test_borrwocheck_while() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; while a == 10 {}}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, Prefix::None);
+
+    let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; while *a == 10 {}}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, Prefix::None);
+
+    let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; while *a == 10 {}}")).unwrap().1);
+    assert_eq!(test3.unwrap().1, Prefix::None);
+}
+
+
+/**
+ *  Test borrwocheck func.
+ */
+#[test]
+fn test_borrwocheck_func() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{
+            fn tio(i: &i32) -> i32 {
+                return *i;
+            }
+            tio(&2)
+            }")).unwrap().1);
+    assert_eq!(test1.unwrap().1, Prefix::None);
+
+    let test2 = borrowcheck_ast(parse_expr(Span::new("{
+            fn tio(i: &mut i32) -> () {
+                *i = 10
+            }
+            tio(&mut 2)
+            }")).unwrap().1);
+    assert_eq!(test2.unwrap().1, Prefix::None);
+
+    let test3 = borrowcheck_ast(parse_expr(Span::new("{
+            fn tio(i: & i32) -> () {
+                let a: & i32 = i;
+                let b: & i32 = i;
+                let c: & i32 = a;
+            }
+            tio(& 2)
+            }")).unwrap().1);
+    assert_eq!(test3.unwrap().1, Prefix::None);
+}
+
+/**
+ *  Test borrwocheck funcs.
+ */
+#[test]
+fn test_borrwocheck_funcs() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("
+        fn tio(i: &i32) -> i32 {
+            if i < 50 {
+                return tio(&(i + 1));
+            } 
+            else{
+                return *i;       
+            }
+        }
+
+        fn main() {
+            let a: i32 = 2; 
+            tio(&a);
+        }
+        ")).unwrap().1);
+    assert_eq!(test1.unwrap().1, Prefix::None);
 }
