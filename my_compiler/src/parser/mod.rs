@@ -66,7 +66,6 @@ pub type SpanPrefix<'a> = (Span<'a>, Prefix);
  */
 pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
     alt((
-        // parse_funcs,
         parse_func,
         parse_while,
         parse_if,
@@ -80,9 +79,10 @@ pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
         parse_var_with_type,
         parse_prefixed,
         parse_parentheses,
+        parse_mytype,
+        parse_var,
         parse_i32,
         parse_bool,
-        parse_var,
     ))(input)
 }
 
@@ -156,12 +156,9 @@ fn parse_binoperand(input: Span) -> IResult<Span, SpanOp> {
  *  Parse a Ident expresion from string.
  */
 fn parse_var(input: Span) -> IResult<Span, SpanExpr> {
-    map(
-        tuple((
-            parse_var_prefix,
-            preceded(multispace0, alpha1),
-        )),
-        |(p, s)| (s, Expr::Var(p, s.fragment))
+    map (
+        preceded(multispace0, alpha1),
+        |s: Span| (s, Expr::Var(s.fragment))
     )(input)
 }
 
@@ -220,14 +217,12 @@ fn parse_deref(input: Span) -> IResult<Span, SpanPrefix> {
 /**
  *  Parse a MyType expresion from string.
  */
-fn parse_mytype(input: Span) -> IResult<Span, SpanMyType> {
+fn parse_mytype(input: Span) -> IResult<Span, SpanExpr> {
     preceded(
         multispace0, 
         alt((
-            map(tag("i32"), |s| (s, MyType::Int32)),
-            map(tag("bool"), |s| (s, MyType::Boolean)),
-            // map(tag("Str"), |s| (s, MyType::Str)),
-            // map(tag("None"), |s| (s, MyType::None)),
+            map(tag("i32"), |s| (s, Expr::Type((s, MyType::Int32)))),
+            map(tag("bool"), |s| (s, Expr::Type((s, MyType::Boolean)))),
         ))
     )(input)
 }
@@ -237,35 +232,25 @@ fn parse_mytype(input: Span) -> IResult<Span, SpanMyType> {
  *  Parse a let expresion from string.
  */
 fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
-    alt ((
-        map(
-            tuple((
-                preceded(multispace0, tag("let")), 
-                preceded(multispace0, tag("mut")),
-                preceded(multispace0, alpha1), 
-                tag(":"),
-                parse_var_prefix,
-                parse_mytype, 
-                preceded(multispace0, tag("=")), 
-                parse_expr, 
-                preceded(multispace0, tag(";")),
+    map(
+        tuple((
+            preceded(multispace0, tag("let")), 
+            alt ((
+                map(
+                    parse_prefixed,
+                    |p| p
+                ),
+                map(
+                    parse_var_with_type,
+                    |p| p
+                ),
             )),
-            |(_, _, i, _, p, t, _, r, _)| (input, Expr::Let((input, Prefix::Mut), i.fragment, p, t, Box::new(r)))
-        ),
-        map(
-            tuple((
-                preceded(multispace0, tag("let")), 
-                preceded(multispace0, alpha1), 
-                tag(":"),
-                parse_var_prefix,
-                parse_mytype, 
-                preceded(multispace0, tag("=")), 
-                parse_expr, 
-                preceded(multispace0, tag(";")),
-            )),
-            |(_, i, _, p, t, _, r, _)| (input, Expr::Let((input, Prefix::None), i.fragment, p, t, Box::new(r)))
-        ),
-    ))(input)
+            preceded(multispace0, tag("=")), 
+            parse_expr, 
+            preceded(multispace0, tag(";")), // onödig?
+        )),
+        |(_, i, _, r, _)| (input, Expr::Let(Box::new(i), Box::new(r)))
+    )(input)
 }
 
 
@@ -273,27 +258,15 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
  *  Parse a assign expresion from string.
  */
 fn parse_assign(input: Span) -> IResult<Span, SpanExpr> {
-    alt (( 
-        map(
-            tuple((
-                parse_deref,
-                preceded(multispace0, alpha1), 
-                preceded(multispace0, tag("=")), 
-                parse_expr, 
-                preceded(multispace0, tag(";")),
-            )),
-            |(p, i, _, r, _)| (input, Expr::Assign(p, i.fragment, Box::new(r)))
-        ),
-        map(
-            tuple((
-                preceded(multispace0, alpha1), 
-                preceded(multispace0, tag("=")), 
-                parse_expr, 
-                preceded(multispace0, tag(";")),
-            )),
-            |(i, _, r, _)| (input, Expr::Assign((input, Prefix::None), i.fragment, Box::new(r)))
-        ),
-    ))(input)
+    map(
+        tuple((
+            preceded(multispace0, parse_var), 
+            preceded(multispace0, tag("=")), 
+            parse_expr, 
+            preceded(multispace0, tag(";")),
+        )),
+        |(i, _, r, _)| (input, Expr::Assign(Box::new(i), Box::new(r)))
+    )(input)
 }
 
 
@@ -422,29 +395,30 @@ fn parse_func(input: Span) -> IResult<Span, SpanExpr> {
         map(
             tuple((
                 preceded(multispace0, tag("fn")),
-                preceded(multispace0, alpha1),
+                preceded(multispace0, parse_var),
                 tag("("),
-                separated_list(tag(","), parse_var_with_type),
+                separated_list(tag(","), alt((parse_prefixed, parse_var_with_type))),
                 tag(")"),
                 preceded(multispace0, tag("->")),
                 alt ((
+                    parse_prefixed,
                     parse_mytype,
-                    map(preceded(multispace0,tag("()")), |s| (s, MyType::NoType)),
+                    map(preceded(multispace0,tag("()")), |s| (s, Expr::Type((s, MyType::NoType)))),
                 )),
                 parse_body,
             )),
-            |(_, i, _, p, _, _, t, b)| (input, Expr::Func(i.fragment, p, t, Box::new(b)))
+            |(_, i, _, p, _, _, t, b)| (input, Expr::Func(Box::new(i), p, Box::new(t), Box::new(b)))
         ),
         map(
             tuple((
                 preceded(multispace0, tag("fn")),
-                preceded(multispace0, alpha1),
+                preceded(multispace0, parse_var),
                 tag("("),
-                separated_list(tag(","), parse_var_with_type),
+                separated_list(tag(","), alt((parse_prefixed, parse_var_with_type))),
                 tag(")"),
                 parse_body,
             )),
-            |(_, i, _, p, _, b)| (input, Expr::Func(i.fragment, p, (input, MyType::NoType), Box::new(b)))
+            |(_, i, _, p, _, b)| (input, Expr::Func(Box::new(i), p, Box::new((input, Expr::Type((input, MyType::NoType)))), Box::new(b)))
         ),
     ))(input)
 }
@@ -477,25 +451,25 @@ fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
         map(
             preceded(multispace0,
                 tuple((
-                    preceded(multispace0, alpha1),
+                    parse_var,
                     tag("("),
                     separated_list(tag(","), parse_expr),
                     tag(")"),
-                    tag(";"),
+                    tag(";"), // TODO onödig?
                 )),
             ),
-            |(i, _, p, _, _)| (input, Expr::FuncCall(i.fragment, p))
+            |(i, _, p, _, _)| (input, Expr::FuncCall(Box::new(i), p))
         ),
         map(
             preceded(multispace0,
                 tuple((
-                    preceded(multispace0, alpha1),
+                    parse_var,
                     tag("("),
                     separated_list(tag(","), parse_expr),
                     tag(")"),
                 )),
             ),
-            |(i, _, p, _)| (input, Expr::FuncCall(i.fragment, p))
+            |(i, _, p, _)| (input, Expr::FuncCall(Box::new(i), p))
         ),
     ))(input)
 }
@@ -523,8 +497,8 @@ fn parse_return(input: Span) -> IResult<Span, SpanExpr> {
  */
 pub fn parse<'a>(input: &'a str) -> IResult<Span, SpanExpr> {
     let i_span = Span::new(input);
-    parse_expr(i_span)
-    // parse_funcs(i_span)
+    // parse_expr(i_span)
+    parse_funcs(i_span)
 }
 
 
@@ -535,13 +509,21 @@ fn parse_var_with_type(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
-                preceded(multispace0, alpha1),
+                parse_var,
                 tag(":"),
-                parse_var_prefix,
-                parse_mytype,
+                alt ((
+                    map(
+                        parse_prefixed,
+                        |p| p
+                    ),
+                    map(
+                        parse_mytype,
+                        |t| t
+                    ),
+                )),
             )),
         ),
-        |(i, _, p, t)| (input, Expr::VarWithType(p, i.fragment, t))
+        |(e, _, t)| (input, Expr::VarWithType(Box::new(e), Box::new(t)))
     )(input)
 }
 
@@ -553,31 +535,24 @@ fn parse_prefixed(input: Span) -> IResult<Span, SpanExpr> {
     map(
         preceded(multispace0,
             tuple((
-                parse_var_prefix_2,
+                alt((
+                    map(
+                        preceded(multispace0, tag("&mut")),
+                        |_| (input, Prefix::BorrowMut)
+                    ),
+                    map(
+                        preceded(multispace0, tag("mut")),
+                        |_| (input, Prefix::Mut)
+                    ),
+                    map(
+                        preceded(multispace0, tag("&")),
+                        |_| (input, Prefix::Borrow)
+                    ),
+                    parse_deref,
+                )),
                 parse_expr,
             )),
         ),
         |(p, val)| (input, Expr::Prefixed(p, Box::new(val)))
     )(input)
-}
-
-/**
- *  Parse a var prefix expresion from string.
- */
-fn parse_var_prefix_2(input: Span) -> IResult<Span, SpanPrefix> {
-    alt((
-        map(
-            preceded(multispace0, tag("&mut")),
-            |_| (input, Prefix::BorrowMut)
-        ),
-        map(
-            preceded(multispace0, tag("mut")),
-            |_| (input, Prefix::Mut)
-        ),
-        map(
-            preceded(multispace0, tag("&")),
-            |_| (input, Prefix::Borrow)
-        ),
-        parse_deref,
-    ))(input)
 }

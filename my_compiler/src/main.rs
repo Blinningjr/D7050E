@@ -5,29 +5,30 @@ use std::fs;
 
 #[path = "parser/mod.rs"]
 mod parser;
-#[path = "interpreter/mod.rs"]
-mod interpreter;
-#[path = "typechecker/mod.rs"]
-mod typechecker;
-#[path = "borrowchecker/mod.rs"]
-mod borrowchecker;
+// #[path = "interpreter/mod.rs"]
+// mod interpreter;
+// #[path = "typechecker/mod.rs"]
+// mod typechecker;
+// #[path = "borrowchecker/mod.rs"]
+// mod borrowchecker;
 
 pub use crate::parser::parse;
-pub use crate::interpreter::interp_ast;
+// pub use crate::interpreter::interp_ast;
 
 
 fn main() {
-    let contents = fs::read_to_string("src/test_code.rs")
-        .expect("Something went wrong reading the file");
+    // let contents = fs::read_to_string("src/test_code.rs")
+    //     .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
-    let f = parse("{
-        let mut a: bool = true; 
-        let mut b: &mut bool = &mut a; 
-        let c: &mut bool = &mut b; 
-        **c = false; 
-        return a;
-        }");
+    // let f = parse("{
+    //     let mut a: bool = true; 
+    //     let mut b: &mut bool = &mut a; 
+    //     let c: &mut bool = &mut b; 
+    //     **c = false; 
+    //     return a;
+    //     }");
+    let f = parse("let a: &i32 = &10;");
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
@@ -53,6 +54,6 @@ fn main() {
     // let mut c = &mut a;
     // let v = &mut a + &mut b;
 
-    let a = & 10;
-    print!("\n {:?} \n", a);
+    // let a = & 10;
+    // print!("\n {:?} \n", a);
 }

@@ -9,7 +9,7 @@ use crate::parser::{
     parse_expr, 
     parse,
     Span,
-    };
+};
 
 /**
  *  Test parsing singel int.
