@@ -303,14 +303,14 @@ fn test_interp_mut_panic1() {
 fn test_interp_borrow() {
     let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; b }")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Ident("a".to_string(), 0));
+    assert_eq!(test1.unwrap().1, Val::Borrow(0, 0));
 
     let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: &bool = &a; *b}")).unwrap().1);
     assert!(test2.is_ok());
     assert_eq!(test2.unwrap().1, Val::Bool(true));
 
     let test3 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; c}")).unwrap().1);
-    assert_eq!(test3.unwrap().1, Val::Ident("a".to_string(), 0));
+    assert_eq!(test3.unwrap().1, Val::Borrow(0, 0));
 }
 
 

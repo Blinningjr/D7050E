@@ -5,15 +5,15 @@ use std::fs;
 
 #[path = "parser/mod.rs"]
 mod parser;
-// #[path = "interpreter/mod.rs"]
-// mod interpreter;
-// #[path = "typechecker/mod.rs"]
+#[path = "interpreter/mod.rs"]
+mod interpreter;
+#[path = "typechecker/mod.rs"]
 // mod typechecker;
 // #[path = "borrowchecker/mod.rs"]
 // mod borrowchecker;
 
 pub use crate::parser::parse;
-// pub use crate::interpreter::interp_ast;
+pub use crate::interpreter::interp_ast;
 
 
 fn main() {
@@ -28,7 +28,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = parse("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}");
+    let f = parse("{let mut a: &i32 = &10; a}");
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.

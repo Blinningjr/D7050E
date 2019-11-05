@@ -10,4 +10,5 @@ pub enum Val {
     Empty,
     ReturnEmpty,
     Ident(String, i32),
+    Borrow(usize, i32),
 }
