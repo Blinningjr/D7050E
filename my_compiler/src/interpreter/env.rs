@@ -62,8 +62,22 @@ impl<'a> Scope<'a> {
      *  Stores variable to scope.
      */
     fn store_v(&mut self, key: &str, val: Val, prefix: Prefix) -> Option<usize> {
-        self.mem.push((prefix, val.clone()));
-        self.mem_var.insert(key.to_string(), self.mem.len() - 1)
+        match val {
+            Val::BorrowPrimitive(pos, v) => {
+                match (*v).clone() {
+                    Val::Bool(_) => (),
+                    Val::Num(_) => (),
+                    _ => panic!("store_v"),
+                };
+                self.mem.push((Prefix::None, (*v).clone()));
+                self.mem.push((prefix, Val::Borrow(self.mem.len() - 1, pos)));
+                return self.mem_var.insert(key.to_string(), self.mem.len() - 1);
+            },
+            _ => {
+                self.mem.push((prefix, val.clone()));
+                return self.mem_var.insert(key.to_string(), self.mem.len() - 1);
+            },
+        }
     }
 
     /**
@@ -162,6 +176,7 @@ impl<'a> Env<'a> {
                 match val {
                     Val::Ident(i, _) => value = Val::Borrow(match self.get_var_pos(&i) {Ok(ok) => ok, Err(_) => panic!("store_var"),}, 
                         match self.get_var_scope(&i) {Ok(ok) => ok, Err(_) => panic!("store_var"),}),
+                    Val::BorrowPrimitive(_, v) => value = Val::BorrowPrimitive(self.scope_pos, v),
                     _ => (),
                 }
                 return self.scopes[self.scope_pos as usize].store_v(key, value, prefix)
@@ -331,7 +346,7 @@ impl<'a> Env<'a> {
         return Err(EnvError);
     }
     /**
-     *  Gets the scope were a var is located.
+     *  Gets the mem pos of were a var is located.
      *  Looks for the var in current scope and it's return scopes.
      */
     fn get_var_pos(&mut self, key: &str) -> Result<usize> {

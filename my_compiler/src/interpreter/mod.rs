@@ -494,6 +494,8 @@ fn interp_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>
                 Expr::Var(_) => {
                     return interp_var(*expr, env, p.1);
                 },
+                Expr::Bool(b) => return Ok((e.clone(), Val::BorrowPrimitive(-1, Box::new(Val::Bool(b))))),
+                Expr::Num(n) => return Ok((e.clone(), Val::BorrowPrimitive(-1, Box::new(Val::Num(n))))),
                 _ => return interp_expr(*expr, env),
             }
         },

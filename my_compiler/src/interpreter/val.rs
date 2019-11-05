@@ -11,4 +11,5 @@ pub enum Val {
     ReturnEmpty,
     Ident(String, i32),
     Borrow(usize, i32),
+    BorrowPrimitive(i32, Box<Val>)
 }
