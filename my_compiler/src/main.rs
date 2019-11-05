@@ -28,7 +28,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = parse("let a: &i32 = &10;");
+    let f = parse("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}");
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.

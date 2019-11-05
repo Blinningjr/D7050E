@@ -80,9 +80,9 @@ pub fn parse_expr(input: Span) -> IResult<Span, SpanExpr> {
         parse_prefixed,
         parse_parentheses,
         parse_mytype,
-        parse_var,
         parse_i32,
         parse_bool,
+        parse_var,
     ))(input)
 }
 
@@ -260,7 +260,7 @@ fn parse_let(input: Span) -> IResult<Span, SpanExpr> {
 fn parse_assign(input: Span) -> IResult<Span, SpanExpr> {
     map(
         tuple((
-            preceded(multispace0, parse_var), 
+            preceded(multispace0, alt((parse_var, parse_prefixed,))), 
             preceded(multispace0, tag("=")), 
             parse_expr, 
             preceded(multispace0, tag(";")),
@@ -550,7 +550,16 @@ fn parse_prefixed(input: Span) -> IResult<Span, SpanExpr> {
                     ),
                     parse_deref,
                 )),
-                parse_expr,
+                alt((
+                    parse_var_with_type,
+                    parse_func_call,
+                    parse_unop,
+                    parse_mytype,
+                    parse_parentheses,
+                    parse_i32,
+                    parse_bool,
+                    parse_var,
+                )),
             )),
         ),
         |(p, val)| (input, Expr::Prefixed(p, Box::new(val)))
