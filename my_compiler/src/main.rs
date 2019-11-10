@@ -8,12 +8,13 @@ mod parser;
 #[path = "interpreter/mod.rs"]
 mod interpreter;
 #[path = "typechecker/mod.rs"]
-// mod typechecker;
+mod typechecker;
 // #[path = "borrowchecker/mod.rs"]
 // mod borrowchecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
+// pub use crate::borrowchecker::borrowcheck_ast;
 
 
 fn main() {
@@ -28,7 +29,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = parse("{let mut a: &i32 = &10; a}");
+    let f = parse(" & 1-2");
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
@@ -54,6 +55,5 @@ fn main() {
     // let mut c = &mut a;
     // let v = &mut a + &mut b;
 
-    // let a = & 10;
     // print!("\n {:?} \n", a);
 }

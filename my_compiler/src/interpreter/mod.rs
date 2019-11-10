@@ -246,7 +246,7 @@ fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Let(s, value) => {
             let val = interp_expr(*value, env)?;
-            let mut ident;
+            let ident;
             let mut prefix = Prefix::None;
             match (*s).1 {
                 Expr::Prefixed(p, v) => {

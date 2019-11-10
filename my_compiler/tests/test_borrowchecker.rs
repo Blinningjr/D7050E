@@ -16,26 +16,27 @@
 // mod borrowchecker;
 // use crate::borrowchecker::{
 //     borrowcheck_ast,
+//     VarInfo,
 // };
 
 
 // /**
-//  *  Test borrwocheck singel int.
+//  *  Test borrowcheck singel int.
 //  */
 // #[test]
 // fn test_borrowcheck_int() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" 2")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::None, 0, 0));
 
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" &2")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::Borrow);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::Borrow, 0, 0));
 
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" &mut 2")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::BorrowMut);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::BorrowMut, 0, 0));
 // }
 
 // /**
-//  *  Test borrwocheck singel int panic.
+//  *  Test borrowcheck singel int panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -45,7 +46,7 @@
 
 
 // /**
-//  *  Test borrwocheck singel int panic.
+//  *  Test borrowcheck singel int panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -55,23 +56,23 @@
 
 
 // /**
-//  *  Test borrwocheck singel bool.
+//  *  Test borrowcheck singel bool.
 //  */
 // #[test]
 // fn test_borrowcheck_bool() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" true")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::None, 0, 0));
 
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" &false")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::Borrow);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::Borrow, 0, 0));
 
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" &mut true")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::BorrowMut);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::BorrowMut, 0, 0));
 // }
 
 
 // /**
-//  *  Test borrwocheck singel bool panic.
+//  *  Test borrowcheck singel bool panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -81,7 +82,7 @@
 
 
 // /**
-//  *  Test borrwocheck singel bool panic.
+//  *  Test borrowcheck singel bool panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -91,20 +92,17 @@
 
 
 // /**
-//  *  Test borrwocheck unop.
+//  *  Test borrowcheck unop.
 //  */
 // #[test]
-// fn test_borrwocheck_unop() {
+// fn test_borrowcheck_unop() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" & -2")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::Borrow);
-
-//     let test2 = borrowcheck_ast(parse_expr(Span::new(" &mut !true")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::BorrowMut);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::Borrow, 0, 0));
 // }
 
 
 // /**
-//  *  Test borrwocheck unop panic.
+//  *  Test borrowcheck unop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -114,7 +112,7 @@
 
 
 // /**
-//  *  Test borrwocheck unop panic.
+//  *  Test borrowcheck unop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -124,20 +122,20 @@
 
 
 // /**
-//  *  Test borrwocheck binop.
+//  *  Test borrowcheck binop.
 //  */
 // #[test]
-// fn test_borrwocheck_binop() {
+// fn test_borrowcheck_binop() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new(" & 1-2")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::None, 0, 0));
 
 //     let test2 = borrowcheck_ast(parse_expr(Span::new(" &1 + &12")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::None);
+//     assert_eq!(test2.unwrap().1, VarInfo::Value(Prefix::None, 0, 0));
 // }
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -147,7 +145,7 @@
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -157,7 +155,7 @@
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -167,7 +165,7 @@
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -177,7 +175,7 @@
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -187,7 +185,7 @@
 
 
 // /**
-//  *  Test borrwocheck binop panic.
+//  *  Test borrowcheck binop panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -197,20 +195,21 @@
 
 
 // /**
-//  *  Test borrwocheck let.
+//  *  Test borrowcheck let.
 //  */
 // #[test]
-// fn test_borrwocheck_let() {
+// fn test_borrowcheck_let() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &i32 = &10;")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::Borrow);
+//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::Borrow, 0, 0));
+
 
 //     let test2 = borrowcheck_ast(parse_expr(Span::new("let a: &mut bool = &mut true;")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::None);
+//     assert_eq!(test2.unwrap().1, VarInfo::Value(Prefix::BorrowMut, 0, 0));
 // }
 
 
 // /**
-//  *  Test borrwocheck let panic.
+//  *  Test borrowcheck let panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -220,7 +219,7 @@
 
 
 // /**
-//  *  Test borrwocheck let panic.
+//  *  Test borrowcheck let panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -230,7 +229,7 @@
 
 
 // /**
-//  *  Test borrwocheck let panic.
+//  *  Test borrowcheck let panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -240,7 +239,7 @@
 
 
 // /**
-//  *  Test borrwocheck let panic.
+//  *  Test borrowcheck let panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -250,10 +249,10 @@
 
 
 // /**
-//  *  Test borrwocheck assign.
+//  *  Test borrowcheck assign.
 //  */
 // #[test]
-// fn test_borrwocheck_assign() {
+// fn test_borrowcheck_assign() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; a = &4;}")).unwrap().1);
 //     assert_eq!(test1.unwrap().1, Prefix::Borrow);
 
@@ -263,7 +262,7 @@
 
 
 // /**
-//  *  Test borrwocheck assign panic.
+//  *  Test borrowcheck assign panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -273,7 +272,7 @@
 
 
 // /**
-//  *  Test borrwocheck assign panic.
+//  *  Test borrowcheck assign panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -283,7 +282,7 @@
 
 
 // /**
-//  *  Test borrwocheck assign panic.
+//  *  Test borrowcheck assign panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -293,7 +292,7 @@
 
 
 // /**
-//  *  Test borrwocheck assign panic.
+//  *  Test borrowcheck assign panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -303,10 +302,10 @@
 
 
 // /**
-//  *  Test borrwocheck var.
+//  *  Test borrowcheck var.
 //  */
 // #[test]
-// fn test_borrwocheck_var() {
+// fn test_borrowcheck_var() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; let b: &i32 = &a;}")).unwrap().1);
 //     assert_eq!(test1.unwrap().1, Prefix::Borrow);
 
@@ -322,7 +321,7 @@
 
 
 // /**
-//  *  Test borrwocheck var panic.
+//  *  Test borrowcheck var panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -332,7 +331,7 @@
 
 
 // /**
-//  *  Test borrwocheck var panic.
+//  *  Test borrowcheck var panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -342,7 +341,7 @@
 
 
 // /**
-//  *  Test borrwocheck var panic.
+//  *  Test borrowcheck var panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -352,7 +351,7 @@
 
 
 // /**
-//  *  Test borrwocheck var panic.
+//  *  Test borrowcheck var panic.
 //  */
 // #[test]
 // #[should_panic]
@@ -362,10 +361,10 @@
 
 
 // /**
-//  *  Test borrwocheck if.
+//  *  Test borrowcheck if.
 //  */
 // #[test]
-// fn test_borrwocheck_if() {
+// fn test_borrowcheck_if() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; if a == 10 {}}")).unwrap().1);
 //     assert_eq!(test1.unwrap().1, Prefix::None);
 
@@ -378,10 +377,10 @@
 
 
 // /**
-//  *  Test borrwocheck while.
+//  *  Test borrowcheck while.
 //  */
 // #[test]
-// fn test_borrwocheck_while() {
+// fn test_borrowcheck_while() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; while a == 10 {}}")).unwrap().1);
 //     assert_eq!(test1.unwrap().1, Prefix::None);
 
@@ -394,10 +393,10 @@
 
 
 // /**
-//  *  Test borrwocheck func.
+//  *  Test borrowcheck func.
 //  */
 // #[test]
-// fn test_borrwocheck_func() {
+// fn test_borrowcheck_func() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{
 //             fn tio(i: &i32) -> i32 {
 //                 return *i;
@@ -426,10 +425,10 @@
 // }
 
 // /**
-//  *  Test borrwocheck funcs.
+//  *  Test borrowcheck funcs.
 //  */
 // #[test]
-// fn test_borrwocheck_funcs() {
+// fn test_borrowcheck_funcs() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("
 //         fn tio(i: &i32) -> i32 {
 //             if i < 50 {

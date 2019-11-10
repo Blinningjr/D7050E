@@ -289,12 +289,12 @@ impl<'a> Env<'a> {
         let mem_pos;
         match self.get_var_pos(key.clone()) {
             Ok(p) => mem_pos = p,
-            Err(e) => panic!("assign_var"),
+            Err(_) => panic!("assign_var"),
         };
         let pos;
         match self.get_var_scope(key.clone()) {
             Ok(p) => pos = p,
-            Err(e) => panic!("assign_var"),
+            Err(_) => panic!("assign_var"),
         };
         self.help_assign_var(mem_pos, pos, val, numderef)
     }

@@ -4,6 +4,9 @@
 // use crate::parser::expr::Expr;
 // use crate::parser::varprefix::Prefix;
 
+// use super::VarInfo;
+
+
 
 // /** 
 //  *  Defines Scope. 
@@ -12,9 +15,12 @@
 //  */
 // #[derive(Debug, PartialEq, Clone)]
 // struct Scope<'a> {
-//     mem_var: HashMap<String, Prefix>,
+//     mem_var: HashMap<String, usize>,
+//     mem: Vec<VarInfo>,
+
 //     mem_func: HashMap<String, (Vec<Prefix>, Prefix)>,
 //     mem_func_to_check: Vec<Expr<'a>>,
+
 //     prev: i32,
     
 // }
@@ -29,6 +35,7 @@
 //             mem_var: HashMap::new(),
 //             mem_func: HashMap::new(),
 //             mem_func_to_check: Vec::new(),
+//             mem: Vec::new(),
 //             prev: prev_pos,
 //         }
 //     }
@@ -36,9 +43,9 @@
 //     /**
 //      *  Loads variable with name "key" form scope.
 //      */
-//     fn load_v(&mut self, key: &str) -> Result<Prefix> {
+//     fn load_v(&mut self, key: &str) -> Result<VarInfo> {
 //         match self.mem_var.get(key) {
-//             Some(t) => Ok(t.clone()),
+//             Some(val) => Ok(self.mem[*val].clone()),
 //             _ => Err(EnvError),
 //         }
 //     }
@@ -56,8 +63,13 @@
 //     /**
 //      *  Stores variable to scope.
 //      */
-//     fn store_v(&mut self, key: &str, t: Prefix) -> Option<Prefix> {
-//         self.mem_var.insert(key.to_string(), t)
+//     fn store_v(&mut self, val: VarInfo) -> Option<usize> {
+//         self.mem.push(val.clone());
+//         return self.mem_var.insert(key.to_string(), self.mem.len() - 1);
+//     }
+
+//     fn store_v_mem(&mut self, val: VarInfo) -> () {
+//         self.mem.push(val.clone());
 //     }
 
 //     /**
@@ -82,6 +94,20 @@
 //     fn get_fs_len(&mut self) -> i32 {
 //         self.mem_func_to_check.len() as i32
 //     }
+
+//     fn get_pos(&mut self, key: &str) -> Result<usize> {
+//         match self.mem_var.get(key) {
+//             Some(val) => Ok((*val).clone()),
+//             _ => Err(EnvError),
+//         }
+//     }
+//     fn get_val(&mut self, pos: usize) -> Result<VarInfo> {
+//         Ok(self.mem[pos].clone())
+//     }
+//     fn update_val(&mut self, pos: usize, val: VarInfo) -> () {
+//         self.mem[pos] = val;
+//     }
+    
 // }
 
 
@@ -133,12 +159,13 @@
 //      *  Panic!: If there already exists a variable with the same name in the current scope 
 //      *  or one of it's previouse scopes.
 //      */
-//     pub fn store_var(&mut self, key: &'a str, t: Prefix) -> Option<Prefix> {
-//         let res = self.load_var(key);
-//         match res {
-//             Ok(_) => panic!("store_var: {:?} {:?}", key, t),
-//             Err(_) => return self.scopes[self.scope_pos as usize].store_v(key, t),
-//         }
+//     pub fn store_var(&mut self, val: VarInfo) -> () {
+//         match val {
+//             VarInfo::Ident(_, i, _, _) => {
+
+//             },
+//             _ => 
+//         };
 //     }
 
 //     /**
@@ -156,22 +183,43 @@
 
 //     /**
 //      *  Loads the variable.
+//      *  Panic!: If variable dosen't exist in scope or one of the previous scopes.
 //      */
-//     pub fn load_var(&mut self, key: &str) -> Result<Prefix> {
-//         self.help_load_var(key, self.scope_pos)
+//     pub fn load_var(&mut self, key: &str, numderef: i32) -> Result<VarInfo> {
+//         let mem_pos;
+//         match self.get_var_pos(key.clone()) {
+//             Ok(p) => mem_pos = p,
+//             Err(e) => return Err(e),
+//         };
+//         let pos;
+//         match self.get_var_scope(key.clone()) {
+//             Ok(p) => pos = p,
+//             Err(e) => return Err(e),
+//         };
+//         self.help_load_var(mem_pos, numderef, pos)
 //     }
 
 //     /**
 //      *  Helper function to load_var.
 //      */
-//     fn help_load_var(&mut self, key: &str, pos: i32 ) -> Result<Prefix> {
+//     pub fn help_load_var(&mut self, mem_pos: usize, numderef: i32, pos: i32 ) -> Result<VarInfo> {
 //         if pos >= 0 {
-//             let res = self.scopes[pos as usize].load_v(key);
+//             let res = self.scopes[pos as usize].get_val(mem_pos);
 //             match res {
-//                 Ok(tup) => return Ok(tup),
+//                 Ok(tup) => {
+//                     if numderef > 0 {
+//                         match tup {
+//                             VarInfo::Pointer(_, pos_mem, p, _, _) => {
+//                                 self.help_load_var(pos_mem, numderef- 1, p);
+//                             },
+//                             _ => panic!("help_load_var"),
+//                         };
+//                     }
+//                     return Ok(tup);
+//                 },
 //                 _ => {
 //                     let p = self.scopes[pos as usize].get_prev();
-//                     return self.help_load_var(key, p);
+//                     return self.help_load_var(mem_pos, numderef, p);
 //                 },
 //             }
 //         }
@@ -204,5 +252,103 @@
 
 //     pub fn get_func(&mut self) -> Option<Expr<'a>> {
 //         self.scopes[self.scope_pos as usize].get_f()
+//     }
+
+//     // /**
+//     //  *  Gets the value of var. value meaning a Val::Num or Val::Boolean.
+//     //  */
+//     // pub fn get_var_value(&mut self, key: &str, scope: i32) -> Result<VarInfo> {
+//     //     let mut pos = scope;
+//     //     while pos >= 0 {
+//     //         let res = self.scopes[pos as usize].load_v(key);
+//     //         match res {
+//     //             Ok(tup) => {
+//     //                 match tup {
+//     //                     Val::Ident(i, n) => return self.get_var_value(&i, n),
+//     //                     _ => return Ok(tup.1),
+//     //                 }
+//     //             },
+//     //             _ => pos = self.scopes[pos as usize].get_prev(),
+//     //         }
+//     //     }
+//     //     Err(EnvError)
+//     // }
+
+//     /**
+//      *  Updates the value of a variable.
+//      *  Panic!: If variable dosen't exists.
+//      */
+//     pub fn assign_var(&mut self, key: &str, val: VarInfo, numderef: i32) -> () {
+//         let mem_pos;
+//         match self.get_var_pos(key.clone()) {
+//             Ok(p) => mem_pos = p,
+//             Err(_) => panic!("assign_var"),
+//         };
+//         let pos;
+//         match self.get_var_scope(key.clone()) {
+//             Ok(p) => pos = p,
+//             Err(_) => panic!("assign_var"),
+//         };
+//         self.help_assign_var(mem_pos, pos, val, numderef)
+//     }
+
+//     /**
+//      *  Helper function for assign_var.
+//      */
+//     fn help_assign_var(&mut self, mem_pos: usize, pos: i32, val: VarInfo, numderef: i32) -> () {
+//         if pos >= 0 {
+//             let res = self.scopes[pos as usize].get_val(mem_pos);
+//             match res {
+//                 Ok(tup) => {
+//                     if numderef > 0 {
+//                         match tup {
+//                             VarInfo::Pointer(_, pos_mem, p, _, _) => {
+//                                 self.help_assign_var(pos_mem, p, val, numderef- 1);
+//                             },
+//                             _ => panic!("help_load_var"),
+//                         };
+//                     }
+//                     self.scopes[pos as usize].update_val(mem_pos, val);
+//                 },
+//                 _ => {
+//                     let prev = self.scopes[pos as usize].get_prev();
+//                     return self.help_assign_var(mem_pos, prev, val, numderef)
+//                 },
+//             }
+//         }
+//         panic!("help_assign_var");
+//     }
+
+//     /**
+//      *  Gets the scope were a var is located.
+//      *  Looks for the var in current scope and it's return scopes.
+//      */
+//     fn get_var_scope(&mut self, key: &str) -> Result<i32> {
+//         let mut pos = self.scope_pos;
+//         while pos >= 0 {
+//             let res = self.scopes[pos as usize].load_v(key);
+//             match res {
+//                 Ok(_) => return Ok(pos),
+//                 _ => pos = self.scopes[pos as usize].get_prev(),
+//             }
+//         } 
+//         return Err(EnvError);
+//     }
+
+//     /**
+//      *  Gets the mem pos of were a var is located.
+//      *  Looks for the var in current scope and it's return scopes.
+//      */
+//     fn get_var_pos(&mut self, key: &str) -> Result<usize> {
+//         let s;
+//         match self.get_var_scope(key) {
+//             Ok(v) => s = v,
+//             Err(e) => return Err(e),
+//         };
+//         self.scopes[s as usize].get_pos(key)
+//     }
+
+//     pub fn getPos(&mut self) -> i32 {
+//         return self.scope_pos;
 //     }
 // }

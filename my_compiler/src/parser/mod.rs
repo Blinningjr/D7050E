@@ -291,6 +291,7 @@ fn parse_parentheses(input: Span) -> IResult<Span, SpanExpr> {
 pub fn parse_binop(input: Span) -> IResult<Span, SpanExpr> {
     fn help_parse(i: Span) -> IResult<Span, SpanExpr>{
         alt ((
+            parse_prefixed,
             parse_func_call,
             parse_parentheses,
             parse_i32,
