@@ -9,12 +9,12 @@ mod parser;
 mod interpreter;
 #[path = "typechecker/mod.rs"]
 mod typechecker;
-// #[path = "borrowchecker/mod.rs"]
-// mod borrowchecker;
+#[path = "borrowchecker/mod.rs"]
+mod borrowchecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
-// pub use crate::borrowchecker::borrowcheck_ast;
+pub use crate::borrowchecker::borrowcheck_ast;
 
 
 fn main() {
@@ -29,7 +29,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = parse(" & 1-2");
+    let f = borrowcheck_ast(parse(" !false").unwrap().1);
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
