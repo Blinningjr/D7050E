@@ -166,19 +166,31 @@ impl<'a> Env<'a> {
      *  or one of it's previouse scopes.
      */
     pub fn store_var(&mut self, val: BorrowInfo) -> (i32, usize) {
+        let pointer;
+        let res;
         match val.clone() {
-            BorrowInfo::Var(v, _) => {
-                let res = self.scopes[self.scope_pos as usize].load_var(&v.ident);
-                match res {
+            BorrowInfo::Var(mut v, f) => {
+                let lres = self.scopes[self.scope_pos as usize].load_var(&v.ident);
+                match lres {
                     Ok(_) => panic!("store_var"),
                     Err(_) => (),
                 };
-                return (self.scope_pos, self.scopes[self.scope_pos as usize].store_var(v.ident, val));
+
+                pointer = (self.scope_pos, self.scopes[self.scope_pos as usize].store_var(v.clone().ident, val));
+
+                v.mem_pos = pointer.1;
+                v.scope = pointer.0;
+                res = BorrowInfo::Var(v, f);
             },
-            BorrowInfo::Value(_, _) => {
-                return (self.scope_pos, self.scopes[self.scope_pos as usize].store_val(val));
+            BorrowInfo::Value(mut v, f) => {
+                pointer = (self.scope_pos, self.scopes[self.scope_pos as usize].store_val(val));
+                v.mem_pos = pointer.1;
+                v.scope = pointer.0;
+                res = BorrowInfo::Value(v, f);
             },
         };
+        self.scopes[pointer.0 as usize].update_val(pointer.1, res);
+        return pointer;
     }
 
     /**
@@ -271,48 +283,66 @@ impl<'a> Env<'a> {
      *  Updates the value of a variable.
      *  Panic!: If variable dosen't exists.
      */
-    pub fn assign_var(&mut self, key: &str, val: BorrowInfo, numderef: i32) -> () {
-        let mem_pos;
-        match self.get_var_pos(key.clone()) {
-            Ok(p) => mem_pos = p,
-            Err(_) => panic!("assign_var"),
+    pub fn assign_var(&mut self, pos: i32, mem_pos: usize, val: BorrowInfo) -> BorrowInfo {
+        let value;
+        match val {
+            BorrowInfo::Value(mut v, _) => {
+                v.mem_pos = mem_pos;
+                v.scope = pos;
+                value = BorrowInfo::Value(v, false);
+            },
+            BorrowInfo::Var(mut v, _) => {
+                v.mem_pos = mem_pos;
+                v.scope = pos;
+                value = BorrowInfo::Var(v, false);
+            },
         };
-        let pos;
-        match self.get_var_scope(key.clone()) {
-            Ok(p) => pos = p,
-            Err(_) => panic!("assign_var"),
-        };
-        self.assign_val(mem_pos, pos, val, numderef)
+        
+        if pos < 0 {
+            panic!("assign_var");
+        }
+        self.scopes[pos as usize].update_val(mem_pos, value.clone());
+        return value;
     }
 
-    /**
-     *  Helper function for assign_val.
-     */
-    pub fn assign_val(&mut self, mem_pos: usize, pos: i32, val: BorrowInfo, numderef: i32) -> () {
-        if pos >= 0 {
-            let res = self.scopes[pos as usize].get_val(mem_pos);
-            match res {
-                Ok(bi) => {
-                    if numderef > 0 {
-                        match bi {
-                            BorrowInfo::Var(v, _) => {
-                                self.load_val(v.pointer_mem_pos, numderef- 1, v.pointer_scope_pos);
-                                return ();
-                            },
-                            _ => panic!("assign_val"),
-                        };
-                    }
-                    self.scopes[pos as usize].update_val(mem_pos, val);
-                    return ();
-                },
-                _ => {
-                    let prev = self.scopes[pos as usize].get_prev();
-                    return self.assign_val(mem_pos, prev, val, numderef)
-                },
-            }
-        }
-        panic!("assign_val");
-    }
+    // /**
+    //  *  Helper function for assign_val.
+    //  */
+    // pub fn assign_val(&mut self, mem_pos: usize, pos: i32, val: BorrowInfo, numderef: i32) -> () {
+    //     if pos >= 0 {
+    //         let res = self.scopes[pos as usize].get_val(mem_pos);
+    //         match res {
+    //             Ok(bi) => {
+    //                 let vv;
+    //                 if numderef > 0 {
+    //                     match bi {
+    //                         BorrowInfo::Var(v, _) => {
+    //                             vv = self.load_val(v.pointer_mem_pos, numderef- 1, v.pointer_scope_pos)?.1;
+    //                         },
+    //                         _ => panic!("assign_val"),
+    //                     };
+    //                 }
+    //                 let vall;
+    //                 match val {
+    //                     BorrowInfo::Value(v, b) => {
+
+    //                     },
+    //                     BorrowInfo::Value(v, b) => {
+                            
+    //                     },
+    //                 };
+
+    //                 self.scopes[(vv.1).0 as usize].update_val((vv.1).1, vall.clone());
+    //                 return ();
+    //             },
+    //             _ => {
+    //                 let prev = self.scopes[pos as usize].get_prev();
+    //                 return self.assign_val(mem_pos, prev, val, numderef)
+    //             },
+    //         }
+    //     }
+    //     panic!("assign_val");
+    // }
 
     /**
      *  Gets the scope were a var is located.
@@ -404,6 +434,17 @@ impl<'a> Env<'a> {
                 } else if v.num_borrowmuts > 1 {
                     panic!("check_borrow");
                 }
+            },
+        };
+    }
+
+    pub fn load_borowinfo(&mut self, val: BorrowInfo, numderef: i32) -> Result<(BorrowInfo, (i32, usize))> {
+        match val {
+            BorrowInfo::Value(v, _) => {
+                return self.load_val(v.mem_pos, numderef, v.scope);
+            },
+            BorrowInfo::Var(v, _) => {
+                return self.load_var(&v.ident, numderef);
             },
         };
     }
