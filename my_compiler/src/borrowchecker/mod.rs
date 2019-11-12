@@ -118,7 +118,7 @@ fn borrowcheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                 BorrowInfo::Value(v, _) => {
                     p = v.prefix;
                 },
-                BorrowInfo::Var(v, _) => {
+                BorrowInfo::Var(v, _, _) => {
                     p = v.prefix;
                 },
             };
@@ -149,7 +149,7 @@ fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
                     let p1;
                     match lp {
                         BorrowInfo::Value(v, _) => p1 = v.prefix,
-                        BorrowInfo::Var(v, _) => p1 = v.prefix,
+                        BorrowInfo::Var(v, _, _) => p1 = v.prefix,
                     };
                     match p1 {
                         Prefix::BorrowMut => panic!("borrowcheck_binop"),
@@ -158,7 +158,7 @@ fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
                     let p2; 
                     match rp {
                         BorrowInfo::Value(v, _) => p2 = v.prefix,
-                        BorrowInfo::Var(v, _) => p2 = v.prefix,
+                        BorrowInfo::Var(v, _, _) => p2 = v.prefix,
                     };
                     match p2 {
                         Prefix::BorrowMut => panic!("borrowcheck_binop"),
@@ -204,7 +204,7 @@ fn borrowcheck_varWithType<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a
 
                                 num_borrows: 0,
                                 num_borrowmuts: 0,
-                            }, false);
+                            }, false, false);
                         },
                         Expr::Prefixed(p, t) => {
                             match (*t).1 {
@@ -222,7 +222,7 @@ fn borrowcheck_varWithType<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a
         
                                         num_borrows: 0,
                                         num_borrowmuts: 0,
-                                    }, false);
+                                    }, false, false);
                                 },
                                 _ => panic!("borrowcheck_varWithType"),
                             };
@@ -246,34 +246,58 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
     match (e.1).clone() {
         Expr::Let(var, value) => {
             let mut var_res = borrowcheck_expr(*var, env)?.1;
-            let value_res = borrowcheck_expr(*value, env)?.1;
-            let pointer;
+            let mut value_res = borrowcheck_expr(*value, env)?.1;
+            let mut pointer;
 
             let p2;
             match value_res.clone() {
                 BorrowInfo::Value(v, _) => {
                     p2 = v.prefix;
                     pointer = (v.scope, v.mem_pos);
+                    match p2.clone() {
+                        Prefix::None => {
+                            pointer =  env.store_var(value_res.clone());
+                        },
+                        _ => {},
+                    };
                 },
-                BorrowInfo::Var(v, _) => {
-                    p2 = v.prefix;
-                    pointer = (v.scope, v.mem_pos);
+                BorrowInfo::Var(v, _, b) => {
+                    if b {
+                        let lv = env.load_val(v.mem_pos, 0, v.scope).unwrap();
+                        pointer = lv.clone().1;
+                        value_res = lv.clone().0;
+                        match var_res.clone() {
+                            BorrowInfo::Var(v, _, _) => {
+                                p2 = v.prefix;
+                            },
+                            BorrowInfo::Value(v, _) => {
+                                p2 = v.prefix;
+                            },
+                        };
+                    } else {
+                        p2 = v.prefix;
+                        pointer = (v.scope, v.mem_pos);
+                    }
                 },
             };
+
+            
+
 
             let p1;
             match var_res.clone() {
                 BorrowInfo::Value(_, _) => panic!("borrowcheck_let"),
-                BorrowInfo::Var(mut v, _) => {
+                BorrowInfo::Var(mut v, _, _) => {
                     p1 = v.clone().prefix;
                     v.pointer_scope_pos = pointer.0;
                     v.pointer_mem_pos = pointer.1;
-                    var_res = BorrowInfo::Var(v, false);
+                    var_res = BorrowInfo::Var(v, false, false);
                 },
             };
 
+            // println!("{:#?}", value_res);
             if p1 != p2 {
-                panic!("borrowcheck_let");
+                panic!("borrowcheck_let {:?} != {:?}", p1, p2);
             }
 
             let store = env.store_var(var_res.clone());
@@ -306,10 +330,24 @@ fn borrowcheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Spa
         Expr::Assign(variable, value) => {
             let mut var;
             let ident;
+            let mut mutable = false;
+
             match variable.clone().1 {
                 Expr::Prefixed(p, ev) => {
                     match ev.1 {
-                        Expr::Var(i) => ident = i,
+                        Expr::Var(i) => {
+                            ident = i;
+                            var = env.load_var(ident.clone(), 0).unwrap().0;
+                            match var {
+                                BorrowInfo::Var(v, _, _) => {
+                                    match v.prefix {
+                                        Prefix::BorrowMut => mutable = true,
+                                        _ => mutable = false,
+                                    };
+                                },
+                                _ => panic!("borrowcheck_assign 1"),
+                            };
+                        },
                         _ => panic!("borrowcheck_assign 2"),
                     };
                     match p.clone().1 {
@@ -330,26 +368,34 @@ fn borrowcheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Spa
             let p_var;
             let scope;
             let mem_pos;
+            
             match var.clone() {
                 BorrowInfo::Value(v, _) => {
-                    p_var = v.prefix;
+                    p_var = v.prefix.clone();
                     scope = v.scope;
                     mem_pos = v.mem_pos;
                 },
-                BorrowInfo::Var(v, _) => {
+                BorrowInfo::Var(v, _, _) => {
                     p_var = v.prefix;
                     scope = v.pointer_scope_pos;
                     mem_pos = v.pointer_mem_pos;
+                    mutable = v.mutable;
                 },
             };
             let p_val;
             match val.clone().1 {
                 BorrowInfo::Value(v, _) => p_val = v.prefix,
-                BorrowInfo::Var(v, _) => p_val = v.prefix, 
+                BorrowInfo::Var(v, _, _) => p_val = v.prefix, 
             };
 
             if p_var != p_val {
                 panic!("borrowcheck_assign 3 {:?} {:?}", p_var, p_val);
+            }
+
+            if mutable {
+                env.assign_var(scope, mem_pos, val.1);
+            } else {
+                panic!("borrowcheck_assign {:?}", mutable);
             }
 
             let res = env.load_var(ident, 0).unwrap().0;
@@ -376,10 +422,10 @@ fn borrowcheck_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
                     v.mem_pos = (stored.1).1;
                     res = BorrowInfo::Value(v, false);
                 },
-                BorrowInfo::Var(mut v, _) => {
+                BorrowInfo::Var(mut v, _, _) => {
                     v.scope = (stored.1).0;
                     v.mem_pos = (stored.1).1;
-                    res = BorrowInfo::Var(v, false);
+                    res = BorrowInfo::Var(v, false, false);
                 },
             };
             return Ok((e, res));
@@ -415,8 +461,8 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                             BorrowInfo::Value(v, _) => {
                                 res = BorrowInfo::Value(v, true);
                             },
-                            BorrowInfo::Var(v, _) => {
-                                res = BorrowInfo::Var(v, true);
+                            BorrowInfo::Var(v, _, _) => {
+                                res = BorrowInfo::Var(v, true, false);
                             },
                         };
                         return Ok((e, res));
@@ -432,7 +478,7 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                                     return Ok((e, res));
                                 }
                             },
-                            BorrowInfo::Var(_, b) => {
+                            BorrowInfo::Var(_, b, _) => {
                                 if b {
                                     borrowcheck_funcs_in_list(e.clone(), env);
                                     env.pop_scope();
@@ -637,7 +683,7 @@ fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                 let pt;
                 match typ {
                     BorrowInfo::Value(v, _) => pt = v.prefix,
-                    BorrowInfo::Var(v, _) => pt = v.prefix,
+                    BorrowInfo::Var(v, _, _) => pt = v.prefix,
                 };
 
                 env.crate_scope();
@@ -649,7 +695,7 @@ fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                 let pb;
                 match body_p {
                     BorrowInfo::Value(v, _) => pb = v.prefix,
-                    BorrowInfo::Var(v, _) => pb = v.prefix,
+                    BorrowInfo::Var(v, _, _) => pb = v.prefix,
                 };
                 if pt != pb {
                     panic!("borrowcheck_funcs_in_list");
@@ -683,7 +729,8 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                             val = BorrowInfo::Value(v, false);
                         },
                         Prefix::BorrowMut => {
-                            let pointer = env.store_var(val.clone());
+                            v.mutable = true;
+                            let pointer = env.store_var(BorrowInfo::Value(v.clone(), false));
                             env.add_borrowmut(pointer.0, pointer.1);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
@@ -694,48 +741,39 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                         Prefix::None => (),
                     };
                 },
-                BorrowInfo::Var(mut v, _) => {
+                BorrowInfo::Var(mut v, _, _) => {
                     match p.clone().1 {
                         Prefix::DeRef(n) => {
                             let lval = env.load_var(&v.ident, n).unwrap();
-                            match lval.0 {
-                                BorrowInfo::Value(mut v, _) => {
-                                    v.scope = (lval.1).0;
-                                    v.mem_pos = (lval.1).1;
-                                    val = BorrowInfo::Value(v, false);
-                                },
-                                BorrowInfo::Var(mut v, _) => {
-                                    v.scope = (lval.1).0;
-                                    v.mem_pos = (lval.1).1;
-                                    val = BorrowInfo::Var(v, false);
-                                },
-                            };
+                            v.scope = (lval.1).0;
+                            v.mem_pos = (lval.1).1;
+                            val = BorrowInfo::Var(v, false, true);
                         },
                         Prefix::Borrow => {
-                            let pointer = env.store_var(val.clone());
+                            let pointer = env.load_borowinfo(val.clone(), 0).unwrap().1;
                             env.add_borrow(pointer.0, pointer.1);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
-                            val = BorrowInfo::Var(v, false);
+                            val = BorrowInfo::Var(v, false, true);
                         },
                         Prefix::BorrowMut => {
-                            let pointer = env.store_var(val.clone());
+                            let pointer = env.load_borowinfo(val.clone(), 0).unwrap().1;
                             env.add_borrowmut(pointer.0, pointer.1);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
-                            val = BorrowInfo::Var(v, false);
+                            val = BorrowInfo::Var(v, false, true);
                         },
                         Prefix::Mut =>{
                             v.mutable = true;
-                            val = BorrowInfo::Var(v, false);
+                            val = BorrowInfo::Var(v, false, false);
                         },
                         Prefix::None => (),
                     };
                 },
             };
-            
+
             return Ok((e, val));
         },
         _ => panic!("borrowcheck_prefixed"),

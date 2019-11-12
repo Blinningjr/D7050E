@@ -169,10 +169,10 @@ impl<'a> Env<'a> {
         let pointer;
         let res;
         match val.clone() {
-            BorrowInfo::Var(mut v, f) => {
+            BorrowInfo::Var(mut v, f, _) => {
                 let lres = self.scopes[self.scope_pos as usize].load_var(&v.ident);
                 match lres {
-                    Ok(_) => panic!("store_var"),
+                    Ok(_) => panic!("store_var {:?}", v.ident),
                     Err(_) => (),
                 };
 
@@ -180,7 +180,7 @@ impl<'a> Env<'a> {
 
                 v.mem_pos = pointer.1;
                 v.scope = pointer.0;
-                res = BorrowInfo::Var(v, f);
+                res = BorrowInfo::Var(v, f, false);
             },
             BorrowInfo::Value(mut v, f) => {
                 pointer = (self.scope_pos, self.scopes[self.scope_pos as usize].store_val(val));
@@ -234,7 +234,7 @@ impl<'a> Env<'a> {
                 Ok(bi) => {
                     if numderef > 0 {
                         match bi.clone() {
-                            BorrowInfo::Var(v, false) => {
+                            BorrowInfo::Var(v, false, false) => {
                                 return self.load_val(v.pointer_mem_pos, numderef - 1, v.pointer_scope_pos);
                             },
                             _ => panic!("load_val"),
@@ -291,16 +291,17 @@ impl<'a> Env<'a> {
                 v.scope = pos;
                 value = BorrowInfo::Value(v, false);
             },
-            BorrowInfo::Var(mut v, _) => {
+            BorrowInfo::Var(mut v, _, _) => {
                 v.mem_pos = mem_pos;
                 v.scope = pos;
-                value = BorrowInfo::Var(v, false);
+                value = BorrowInfo::Var(v, false, false);
             },
         };
         
         if pos < 0 {
             panic!("assign_var");
         }
+
         self.scopes[pos as usize].update_val(mem_pos, value.clone());
         return value;
     }
@@ -389,9 +390,9 @@ impl<'a> Env<'a> {
                 v.num_borrows += 1;
                 val = BorrowInfo::Value(v, false);
             },
-            BorrowInfo::Var(mut v, _) => {
+            BorrowInfo::Var(mut v, _, _) => {
                 v.num_borrows += 1;
-                val = BorrowInfo::Var(v, false);
+                val = BorrowInfo::Var(v, false, false);
             },
         };
         self.check_borrow(val.clone());
@@ -406,9 +407,9 @@ impl<'a> Env<'a> {
                 v.num_borrowmuts += 1;
                 val = BorrowInfo::Value(v, false);
             },
-            BorrowInfo::Var(mut v, _) => {
+            BorrowInfo::Var(mut v, _, _) => {
                 v.num_borrowmuts += 1;
-                val = BorrowInfo::Var(v, false);
+                val = BorrowInfo::Var(v, false, false);
             },
         };
         self.check_borrow(val.clone());
@@ -426,7 +427,7 @@ impl<'a> Env<'a> {
                     panic!("check_borrow");
                 }
             },
-            BorrowInfo::Var(v, _) => {
+            BorrowInfo::Var(v, _, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
                         panic!("check_borrow");
@@ -443,7 +444,7 @@ impl<'a> Env<'a> {
             BorrowInfo::Value(v, _) => {
                 return self.load_val(v.mem_pos, numderef, v.scope);
             },
-            BorrowInfo::Var(v, _) => {
+            BorrowInfo::Var(v, _, _) => {
                 return self.load_var(&v.ident, numderef);
             },
         };
