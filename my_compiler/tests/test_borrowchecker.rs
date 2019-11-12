@@ -487,78 +487,105 @@ fn test_borrowcheck_var() {
         num_borrowmuts: 0,
     }, false, false));
 
-    // let test4 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &i32 = &a; let c: i32 = **b;}")).unwrap().1);
-    // assert_eq!(test4.unwrap().1, BorrowInfo::Var(VarInfo {
-    //     mutable: false,
-    //     prefix: Prefix::None,
-    //     ident: "a".to_string(),
+    let test4 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &i32 = &a; let c: i32 = **b;}")).unwrap().1);
+    assert_eq!(test4.unwrap().1, BorrowInfo::Var(VarInfo {
+        mutable: false,
+        prefix: Prefix::None,
+        ident: "c".to_string(),
 
-    //     scope: 0,
-    //     mem_pos: 1,
+        scope: 0,
+        mem_pos: 3,
 
-    //     pointer_scope_pos: 0,
-    //     pointer_mem_pos: 0,
+        pointer_scope_pos: 0,
+        pointer_mem_pos: 0,
 
-    //     num_borrows: 0,
-    //     num_borrowmuts: 0,
-    // }, false, false));
+        num_borrows: 0,
+        num_borrowmuts: 0,
+    }, false, false));
 }
 
 
-// /**
-//  *  Test borrowcheck var panic.
-//  */
-// #[test]
-// #[should_panic]
-// fn test_borrowcheck_var_panic_1() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = **a;}")).unwrap().1);
-// }
+/**
+ *  Test borrowcheck var panic.
+ */
+#[test]
+#[should_panic]
+fn test_borrowcheck_var_panic_1() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = **a;}")).unwrap().1);
+}
 
 
-// /**
-//  *  Test borrowcheck var panic.
-//  */
-// #[test]
-// #[should_panic]
-// fn test_borrowcheck_var_panic_2() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = a;}")).unwrap().1);
-// }
+/**
+ *  Test borrowcheck var panic.
+ */
+#[test]
+#[should_panic]
+fn test_borrowcheck_var_panic_2() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = a;}")).unwrap().1);
+}
 
 
-// /**
-//  *  Test borrowcheck var panic.
-//  */
-// #[test]
-// #[should_panic]
-// fn test_borrowcheck_var_panic_3() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; let b: &i32 = a;}")).unwrap().1);
-// }
+/**
+ *  Test borrowcheck var panic.
+ */
+#[test]
+#[should_panic]
+fn test_borrowcheck_var_panic_3() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; let b: &i32 = a;}")).unwrap().1);
+}
 
 
-// /**
-//  *  Test borrowcheck var panic.
-//  */
-// #[test]
-// #[should_panic]
-// fn test_borrowcheck_var_panic_4() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &mut i32 = a;}")).unwrap().1);
-// }
+/**
+ *  Test borrowcheck var panic.
+ */
+#[test]
+#[should_panic]
+fn test_borrowcheck_var_panic_4() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &mut i32 = a;}")).unwrap().1);
+}
 
 
-// /**
-//  *  Test borrowcheck if.
-//  */
-// #[test]
-// fn test_borrowcheck_if() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; if a == 10 {}}")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
+/**
+ *  Test borrowcheck if.
+ */
+#[test]
+fn test_borrowcheck_if() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; if a == 10 {}}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
 
-//     let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; if *a == 10 {}}")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::None);
+        scope: -1,
+        mem_pos: 0,
 
-//     let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; if *a == 10 {}}")).unwrap().1);
-//     assert_eq!(test3.unwrap().1, Prefix::None);
-// }
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false));
+
+    let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; if *a == 10 {}}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
+
+        scope: -1,
+        mem_pos: 0,
+
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false));
+
+    let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; if *a == 10 {}}")).unwrap().1);
+    assert_eq!(test3.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
+
+        scope: -1,
+        mem_pos: 0,
+
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false));
+}
 
 
 // /**

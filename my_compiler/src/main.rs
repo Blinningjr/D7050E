@@ -29,7 +29,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = borrowcheck_ast(parse("{let a: &mut i32 = &mut 10; let b: i32 = *a;}").unwrap().1);
+    let f = borrowcheck_ast(parse("{let a: i32 = 10; while a == 10 {}}").unwrap().1);
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.

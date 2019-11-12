@@ -51,7 +51,7 @@ fn borrowcheck_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
         Expr::Assign(_, _) => borrowcheck_assign(e, env),
         Expr::Var(_) => borrowcheck_var(e, env),
         Expr::Body(_) => borrowcheck_body(e, env),
-        // Expr::If(_, _, _) => borrowcheck_if(e, env),
+        Expr::If(_, _, _) => borrowcheck_if(e, env),
         // Expr::While(_, _) => borrowcheck_while(e, env),
         // Expr::Func(_, _, _, _) => add_func_to_borrowchecking_list(e, env),
         // Expr::FuncCall(_, _) => borrowcheck_func_call(e, env),
@@ -498,55 +498,67 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
 }
 
 
-// /** 
-//  *  Borrowcheck if in ast.
-// */
-// fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
-//     match (e.1).clone() {
-//         Expr::If(b, ib, eb) => {
-//             let val = borrowcheck_expr(*b, env)?;
-//             match val.1 {
-//                 BorrowInfo::Value(v) => {
-//                     match v.prefix {
-//                         Prefix::DeRef(_) => panic!("borrowcheck_if"),
-//                         Prefix::Mut => panic!("borrowcheck_if"),
-//                         Prefix::ReturnPrefix(_) => panic!("borrowcheck_if"),
-//                         _ => (),
-//                     };
-//                 },
-//                 _ => panic!("borrowcheck_if"),
-//             };
-//             let ib_r = borrowcheck_body(*ib, env)?;
-//             let eb_r = borrowcheck_body(*eb, env)?;
-//             let p_ib;
-//             match ib_r.1 {
-//                 BorrowInfo::Value(v) => p_ib = v.prefix,
-//                 BorrowInfo::Var(v) => p_ib = v.prefix,
-//             };
-//             let p_eb;
-//             match eb_r.1 {
-//                 BorrowInfo::Value(v) => p_eb = v.prefix,
-//                 BorrowInfo::Var(v) => p_eb = v.prefix,
-//             };
+/** 
+ *  Borrowcheck if in ast.
+*/
+fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
+    match (e.1).clone() {
+        Expr::If(b, ib, eb) => {
+            env.crate_scope();
+            let val = borrowcheck_expr(*b, env)?;
+            match val.clone().1 {
+                BorrowInfo::Value(v, _) => {
+                    match v.prefix {
+                        Prefix::DeRef(_) => panic!("borrowcheck_if"),
+                        Prefix::Mut => panic!("borrowcheck_if"),
+                        _ => (),
+                    };
+                },
+                _ => panic!("borrowcheck_if"),
+            };
 
-//             match p_ib {
-//                 Prefix::ReturnPrefix(ip) => {
-//                     match p_eb {
-//                         Prefix::ReturnPrefix(ep) => {
-//                                 if ip != ep {
-//                                     panic!("borrowcheck_if");
-//                                 }
-//                             },
-//                         _ => (),
-//                     }
-//                 },
-//                 _ => (),
-//             };
-//             return Ok(eb_r);
-//         },
-//         _ => panic!("borrowcheck_if"),
-//     }
-// }
+
+            let ib_r = borrowcheck_body(*ib, env)?;
+            // let eb_r = borrowcheck_body(*eb, env)?;
+            // let p_ib;
+            // let b_ib;
+            // match ib_r.clone().1 {
+            //     BorrowInfo::Value(v, b) => {
+            //         p_ib = v.prefix;
+            //         b_ib = b;
+            //     },
+            //     BorrowInfo::Var(v, b, _) => {
+            //         p_ib = v.prefix;
+            //         b_ib = b;
+            //     },
+            // };
+
+            // let p_eb;
+            // let b_eb;
+            // match eb_r.1 {
+            //     BorrowInfo::Value(v, b) => {
+            //         p_eb = v.prefix;
+            //         b_eb = b;
+            //     },
+            //     BorrowInfo::Var(v, b, _) => {
+            //         p_eb = v.prefix;
+            //         b_eb = b;
+            //     },
+            // };
+
+            // if b_ib {
+            //     if b_eb {
+            //         if p_ib != p_eb {
+            //             panic!("borrowcheck_if");
+            //         }
+            //     } 
+            // }
+            
+            return Ok(val);
+        },
+        _ => panic!("borrowcheck_if"),
+    }
+}
 
 
 // // /** 
@@ -670,6 +682,7 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
  *  Adds to list of func that need borrowchecking in ast.
 */
 fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
+    println!("{:#?}", env);
     while env.get_funcs_len() > 0 {
         let e;
         match env.get_func() {
