@@ -454,6 +454,7 @@ fn borrowcheck_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
         Expr::Var(ident) => {
             let res;
             let stored = env.load_var(ident, 0).unwrap();
+            
             match stored.clone().0 {
                 BorrowInfo::Value(mut v, _, _) => {
                     v.scope = (stored.1).0;
@@ -589,7 +590,7 @@ fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
             if b_ib {
                 if b_eb {
                     if p_ib != p_eb {
-                        panic!("borrowcheck_if");
+                        panic!("borrowcheck_if {:?}");
                     }
                 } 
             }
@@ -717,8 +718,9 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
                     BorrowInfo::Value(v, _, _) => p1 = v.prefix,
                     BorrowInfo::Var(v, _, _) => p1 = v.prefix,
                 };
+
                 if p != p1 {
-                    panic!("borrowcheck_func_call");
+                    panic!("borrowcheck_func_call {:?} != {:?}", p, p1);
                 }
                 i = i + 1;
             }
@@ -822,7 +824,7 @@ fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                     
                     env.store_var(val);
                 }
-                // println!("{:#?}", env);
+
                 let body_p = borrowcheck_body(*body, env).unwrap().1;
 
                 

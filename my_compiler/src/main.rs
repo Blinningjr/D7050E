@@ -29,12 +29,21 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = (parse("{
-        fn tio(i: &mut i32) -> () {
-            *i = 10;
+    let f = borrowcheck_ast(parse("
+        fn tio(i: &i32) -> i32 {
+            if i < 50 {
+                return tio(&(i + 1));
+            } 
+            else{
+                return i;       
+            }
         }
-        tio(&mut 2)
-        }").unwrap().1);
+
+        fn main() {
+            let a: i32 = 2; 
+            tio(&a);
+        }
+        ").unwrap().1);
     // let f = parse(contents.as_str());
     println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
