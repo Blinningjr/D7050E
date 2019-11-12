@@ -6,7 +6,7 @@ use crate::parser::varprefix::Prefix;
 */
 #[derive(Debug, PartialEq, Clone)]
 pub enum BorrowInfo {
-    Value(ValueInfo, bool),
+    Value(ValueInfo, bool, bool),
     Var(VarInfo, bool, bool),
 }
 

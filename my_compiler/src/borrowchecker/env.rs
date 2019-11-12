@@ -182,11 +182,11 @@ impl<'a> Env<'a> {
                 v.scope = pointer.0;
                 res = BorrowInfo::Var(v, f, false);
             },
-            BorrowInfo::Value(mut v, f) => {
+            BorrowInfo::Value(mut v, f, _) => {
                 pointer = (self.scope_pos, self.scopes[self.scope_pos as usize].store_val(val));
                 v.mem_pos = pointer.1;
                 v.scope = pointer.0;
-                res = BorrowInfo::Value(v, f);
+                res = BorrowInfo::Value(v, f, false);
             },
         };
         self.scopes[pointer.0 as usize].update_val(pointer.1, res);
@@ -286,10 +286,10 @@ impl<'a> Env<'a> {
     pub fn assign_var(&mut self, pos: i32, mem_pos: usize, val: BorrowInfo) -> BorrowInfo {
         let value;
         match val {
-            BorrowInfo::Value(mut v, _) => {
+            BorrowInfo::Value(mut v, _, _) => {
                 v.mem_pos = mem_pos;
                 v.scope = pos;
-                value = BorrowInfo::Value(v, false);
+                value = BorrowInfo::Value(v, false, false);
             },
             BorrowInfo::Var(mut v, _, _) => {
                 v.mem_pos = mem_pos;
@@ -386,9 +386,9 @@ impl<'a> Env<'a> {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
-            BorrowInfo::Value(mut v, _) => {
+            BorrowInfo::Value(mut v, _, _) => {
                 v.num_borrows += 1;
-                val = BorrowInfo::Value(v, false);
+                val = BorrowInfo::Value(v, false, false);
             },
             BorrowInfo::Var(mut v, _, _) => {
                 v.num_borrows += 1;
@@ -403,9 +403,9 @@ impl<'a> Env<'a> {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
-            BorrowInfo::Value(mut v, _) => {
+            BorrowInfo::Value(mut v, _, _) => {
                 v.num_borrowmuts += 1;
-                val = BorrowInfo::Value(v, false);
+                val = BorrowInfo::Value(v, false, false);
             },
             BorrowInfo::Var(mut v, _, _) => {
                 v.num_borrowmuts += 1;
@@ -418,7 +418,7 @@ impl<'a> Env<'a> {
 
     pub fn check_borrow(&mut self, val: BorrowInfo) -> () {
         match val {
-            BorrowInfo::Value(v, _) => {
+            BorrowInfo::Value(v, _, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
                         panic!("check_borrow");
@@ -441,7 +441,7 @@ impl<'a> Env<'a> {
 
     pub fn load_borowinfo(&mut self, val: BorrowInfo, numderef: i32) -> Result<(BorrowInfo, (i32, usize))> {
         match val {
-            BorrowInfo::Value(v, _) => {
+            BorrowInfo::Value(v, _, _) => {
                 return self.load_val(v.mem_pos, numderef, v.scope);
             },
             BorrowInfo::Var(v, _, _) => {
