@@ -588,20 +588,48 @@ fn test_borrowcheck_if() {
 }
 
 
-// /**
-//  *  Test borrowcheck while.
-//  */
-// #[test]
-// fn test_borrowcheck_while() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; while a == 10 {}}")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
+/**
+ *  Test borrowcheck while.
+ */
+#[test]
+fn test_borrowcheck_while() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: i32 = 10; while a == 10 {return a;}}")).unwrap().1);
+    assert_eq!(test1.unwrap().1, BorrowInfo::Var(VarInfo { 
+        mutable: false, 
+        prefix: Prefix::None, 
+        ident: "a".to_string(), 
+        scope: 0, 
+        mem_pos: 1, 
+        pointer_scope_pos: 0, 
+        pointer_mem_pos: 0, 
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, true, false));
 
-//     let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; while *a == 10 {}}")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::None);
+    let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; while *a == 10 {}}")).unwrap().1);
+    assert_eq!(test2.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
 
-//     let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; while *a == 10 {}}")).unwrap().1);
-//     assert_eq!(test3.unwrap().1, Prefix::None);
-// }
+        scope: -1,
+        mem_pos: 0,
+
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false));
+
+    let test3 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; while *a == 10 {}}")).unwrap().1);
+    assert_eq!(test3.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
+
+        scope: -1,
+        mem_pos: 0,
+
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false));
+}
 
 
 // /**
