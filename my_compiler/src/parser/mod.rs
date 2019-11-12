@@ -498,8 +498,8 @@ fn parse_return(input: Span) -> IResult<Span, SpanExpr> {
  */
 pub fn parse<'a>(input: &'a str) -> IResult<Span, SpanExpr> {
     let i_span = Span::new(input);
-    parse_expr(i_span)
-    // parse_funcs(i_span)
+    // parse_expr(i_span)
+    parse_funcs(i_span)
 }
 
 

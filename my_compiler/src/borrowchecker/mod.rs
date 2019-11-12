@@ -56,7 +56,7 @@ fn borrowcheck_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
         Expr::While(_, _) => borrowcheck_while(e, env),
         Expr::Func(_, _, _, _) => add_func_to_borrowchecking_list(e, env),
         Expr::FuncCall(_, _) => borrowcheck_func_call(e, env),
-        // Expr::Funcs(_) => borrowcheck_funcs(e, env),
+        Expr::Funcs(_) => borrowcheck_funcs(e, env),
         Expr::Prefixed(_, _) => borrowcheck_prefixed(e, env),
         _ => panic!("borrowcheck_expr {:#?}", e),
     }
@@ -729,23 +729,32 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
 }
 
 
-// // /** 
-// //  *  Borrowcheck funcs in ast.
-// // */
-// // fn borrowcheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, Prefix> {
-// //     match (e.1).clone() {
-// //         Expr::Funcs(es) => {
-// //             for expr in es {
-// //                 add_func_to_borrowchecking_list(expr, env);
-// //             }
+/** 
+ *  Borrowcheck funcs in ast.
+*/
+fn borrowcheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
+    match (e.1).clone() {
+        Expr::Funcs(es) => {
+            for expr in es {
+                add_func_to_borrowchecking_list(expr, env);
+            }
 
-// //             borrowcheck_funcs_in_list(e.clone(), env);
-// //             env.pop_scope();
-// //             return Ok((e, Prefix::None));
-// //         },
-// //         _ => panic!("borrowcheck_funcs"),
-// //     }
-// // }
+            borrowcheck_funcs_in_list(e.clone(), env);
+            env.pop_scope();
+            return Ok((e, BorrowInfo::Value(ValueInfo {
+                mutable: false, 
+                prefix: Prefix::None, 
+
+                scope: -1,
+                mem_pos: 0,
+
+                num_borrows: 0, 
+                num_borrowmuts: 0
+            }, false, false)));
+        },
+        _ => panic!("borrowcheck_funcs"),
+    }
+}
 
 
 /** 

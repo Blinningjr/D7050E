@@ -691,25 +691,34 @@ fn test_borrowcheck_func() {
     }, false, false));
 }
 
-// /**
-//  *  Test borrowcheck funcs.
-//  */
-// #[test]
-// fn test_borrowcheck_funcs() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("
-//         fn tio(i: &i32) -> i32 {
-//             if i < 50 {
-//                 return tio(&(i + 1));
-//             } 
-//             else{
-//                 return *i;       
-//             }
-//         }
+/**
+ *  Test borrowcheck funcs.
+ */
+#[test]
+fn test_borrowcheck_funcs() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("
+        fn tio(i: &i32) -> i32 {
+            if i < 50 {
+                return tio(&(i + 1));
+            } 
+            else{
+                return *i;       
+            }
+        }
 
-//         fn main() {
-//             let a: i32 = 2; 
-//             tio(&a);
-//         }
-//         ")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::None);
-// }
+        fn main() {
+            let a: i32 = 2; 
+            tio(&a);
+        }
+        ")).unwrap().1);
+    assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
+        mutable: false, 
+        prefix: Prefix::None, 
+
+        scope: -1,
+        mem_pos: 0,
+
+        num_borrows: 0, 
+        num_borrowmuts: 0
+    }, false, false));
+}
