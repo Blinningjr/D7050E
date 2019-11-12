@@ -67,9 +67,10 @@ impl<'a> Scope<'a> {
     /**
      *  Stores variable to scope.
      */
-    fn store_var(&mut self, key: String, val: BorrowInfo) -> Option<usize> {
+    fn store_var(&mut self, key: String, val: BorrowInfo) -> usize {
         self.mem.push(val.clone());
-        return self.mem_var.insert(key.to_string(), self.mem.len() - 1);
+        self.mem_var.insert(key.to_string(), self.mem.len() - 1);
+        return self.mem.len() - 1;
     }
 
     fn store_val(&mut self, val: BorrowInfo) -> usize {
@@ -164,18 +165,18 @@ impl<'a> Env<'a> {
      *  Panic!: If there already exists a variable with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_var(&mut self, val: BorrowInfo) -> () {
+    pub fn store_var(&mut self, val: BorrowInfo) -> (i32, usize) {
         match val.clone() {
-            BorrowInfo::Var(v) => {
+            BorrowInfo::Var(v, _) => {
                 let res = self.scopes[self.scope_pos as usize].load_var(&v.ident);
                 match res {
                     Ok(_) => panic!("store_var"),
                     Err(_) => (),
                 };
-                self.scopes[self.scope_pos as usize].store_var(v.ident, val);
+                return (self.scope_pos, self.scopes[self.scope_pos as usize].store_var(v.ident, val));
             },
-            BorrowInfo::Value(_) => {
-                self.scopes[self.scope_pos as usize].store_val(val);
+            BorrowInfo::Value(_, _) => {
+                return (self.scope_pos, self.scopes[self.scope_pos as usize].store_val(val));
             },
         };
     }
@@ -197,7 +198,7 @@ impl<'a> Env<'a> {
      *  Loads the variable.
      *  Panic!: If variable dosen't exist in scope or one of the previous scopes.
      */
-    pub fn load_var(&mut self, key: &str, numderef: i32) -> Result<BorrowInfo> {
+    pub fn load_var(&mut self, key: &str, numderef: i32) -> Result<(BorrowInfo, (i32, usize))> {
         let mem_pos;
         match self.get_var_pos(key.clone()) {
             Ok(p) => mem_pos = p,
@@ -208,26 +209,26 @@ impl<'a> Env<'a> {
             Ok(p) => pos = p,
             Err(e) => return Err(e),
         };
-        self.load_val(mem_pos, numderef, pos)
+        return self.load_val(mem_pos, numderef, pos)
     }
 
     /**
      *  Helper function to load_var.
      */
-    pub fn load_val(&mut self, mem_pos: usize, numderef: i32, pos: i32 ) -> Result<BorrowInfo> {
+    pub fn load_val(&mut self, mem_pos: usize, numderef: i32, pos: i32 ) -> Result<(BorrowInfo, (i32, usize))> {
         if pos >= 0 {
             let res = self.scopes[pos as usize].get_val(mem_pos);
             match res {
                 Ok(bi) => {
                     if numderef > 0 {
                         match bi.clone() {
-                            BorrowInfo::Var(v) => {
+                            BorrowInfo::Var(v, false) => {
                                 return self.load_val(v.pointer_mem_pos, numderef - 1, v.pointer_scope_pos);
                             },
                             _ => panic!("load_val"),
                         };
                     }
-                    return Ok(bi);
+                    return Ok((bi, (pos, mem_pos)));
                 },
                 _ => {
                     let p = self.scopes[pos as usize].get_prev();
@@ -294,7 +295,7 @@ impl<'a> Env<'a> {
                 Ok(bi) => {
                     if numderef > 0 {
                         match bi {
-                            BorrowInfo::Var(v) => {
+                            BorrowInfo::Var(v, _) => {
                                 self.load_val(v.pointer_mem_pos, numderef- 1, v.pointer_scope_pos);
                                 return ();
                             },
@@ -317,7 +318,7 @@ impl<'a> Env<'a> {
      *  Gets the scope were a var is located.
      *  Looks for the var in current scope and it's return scopes.
      */
-    fn get_var_scope(&mut self, key: &str) -> Result<i32> {
+    pub fn get_var_scope(&mut self, key: &str) -> Result<i32> {
         let mut pos = self.scope_pos;
         while pos >= 0 {
             let res = self.scopes[pos as usize].load_var(key);
@@ -333,7 +334,7 @@ impl<'a> Env<'a> {
      *  Gets the mem pos of were a var is located.
      *  Looks for the var in current scope and it's return scopes.
      */
-    fn get_var_pos(&mut self, key: &str) -> Result<usize> {
+    pub fn get_var_pos(&mut self, key: &str) -> Result<usize> {
         let s;
         match self.get_var_scope(key) {
             Ok(v) => s = v,
@@ -354,13 +355,13 @@ impl<'a> Env<'a> {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
-            BorrowInfo::Value(mut v) => {
+            BorrowInfo::Value(mut v, _) => {
                 v.num_borrows += 1;
-                val = BorrowInfo::Value(v);
+                val = BorrowInfo::Value(v, false);
             },
-            BorrowInfo::Var(mut v) => {
+            BorrowInfo::Var(mut v, _) => {
                 v.num_borrows += 1;
-                val = BorrowInfo::Var(v);
+                val = BorrowInfo::Var(v, false);
             },
         };
         self.check_borrow(val.clone());
@@ -371,13 +372,13 @@ impl<'a> Env<'a> {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
-            BorrowInfo::Value(mut v) => {
+            BorrowInfo::Value(mut v, _) => {
                 v.num_borrowmuts += 1;
-                val = BorrowInfo::Value(v);
+                val = BorrowInfo::Value(v, false);
             },
-            BorrowInfo::Var(mut v) => {
+            BorrowInfo::Var(mut v, _) => {
                 v.num_borrowmuts += 1;
-                val = BorrowInfo::Var(v);
+                val = BorrowInfo::Var(v, false);
             },
         };
         self.check_borrow(val.clone());
@@ -386,7 +387,7 @@ impl<'a> Env<'a> {
 
     pub fn check_borrow(&mut self, val: BorrowInfo) -> () {
         match val {
-            BorrowInfo::Value(v) => {
+            BorrowInfo::Value(v, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
                         panic!("check_borrow");
@@ -395,7 +396,7 @@ impl<'a> Env<'a> {
                     panic!("check_borrow");
                 }
             },
-            BorrowInfo::Var(v) => {
+            BorrowInfo::Var(v, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
                         panic!("check_borrow");

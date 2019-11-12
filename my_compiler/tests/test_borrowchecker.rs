@@ -31,25 +31,31 @@ fn test_borrowcheck_int() {
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::None, 
+        scope: -1,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 
     let test1 = borrowcheck_ast(parse_expr(Span::new(" &2")).unwrap().1);
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::Borrow, 
+        scope: 0,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 
     let test1 = borrowcheck_ast(parse_expr(Span::new(" &mut 2")).unwrap().1);
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::BorrowMut, 
+        scope: 0,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 }
 
 /**
@@ -81,25 +87,31 @@ fn test_borrowcheck_bool() {
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::None, 
+        scope: -1,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 
     let test1 = borrowcheck_ast(parse_expr(Span::new(" &false")).unwrap().1);
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::Borrow, 
+        scope: 0,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 
     let test1 = borrowcheck_ast(parse_expr(Span::new(" &mut true")).unwrap().1);
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::BorrowMut, 
+        scope: 0,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 }
 
 
@@ -132,9 +144,11 @@ fn test_borrowcheck_unop() {
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::Borrow, 
+        scope: 0,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 }
 
 
@@ -167,17 +181,21 @@ fn test_borrowcheck_binop() {
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::None, 
+        scope: -1,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 
     let test2 = borrowcheck_ast(parse_expr(Span::new(" &1 + &12")).unwrap().1);
     assert_eq!(test2.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
         prefix: Prefix::None, 
+        scope: -1,
+        mem_pos: 0,
         num_borrows: 0, 
         num_borrowmuts: 0
-    }));
+    }, false));
 }
 
 
@@ -241,18 +259,44 @@ fn test_borrowcheck_binop_panic_6() {
 }
 
 
-// /**
-//  *  Test borrowcheck let.
-//  */
-// #[test]
-// fn test_borrowcheck_let() {
-//     let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &i32 = &10;")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, VarInfo::Value(Prefix::Borrow, 0, 0));
+/**
+ *  Test borrowcheck let.
+ */
+#[test]
+fn test_borrowcheck_let() {
+    let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &i32 = &10;")).unwrap().1);
+    assert_eq!(test1.unwrap().1, BorrowInfo::Var(VarInfo {
+        mutable: false,
+        prefix: Prefix::Borrow,
+        ident: "a".to_string(),
+
+        scope: 0,
+        mem_pos: 1,
+
+        pointer_scope_pos: 0,
+        pointer_mem_pos: 0,
+
+        num_borrows: 0,
+        num_borrowmuts: 0,
+    }, false));
 
 
-//     let test2 = borrowcheck_ast(parse_expr(Span::new("let a: &mut bool = &mut true;")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, VarInfo::Value(Prefix::BorrowMut, 0, 0));
-// }
+    let test2 = borrowcheck_ast(parse_expr(Span::new("let a: &mut bool = &mut true;")).unwrap().1);
+    assert_eq!(test2.unwrap().1, BorrowInfo::Var(VarInfo {
+        mutable: false,
+        prefix: Prefix::BorrowMut,
+        ident: "a".to_string(),
+
+        scope: 0,
+        mem_pos: 1,
+
+        pointer_scope_pos: 0,
+        pointer_mem_pos: 0,
+
+        num_borrows: 0,
+        num_borrowmuts: 0,
+    }, false));
+}
 
 
 // /**
@@ -301,10 +345,36 @@ fn test_borrowcheck_binop_panic_6() {
 // #[test]
 // fn test_borrowcheck_assign() {
 //     let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; a = &4;}")).unwrap().1);
-//     assert_eq!(test1.unwrap().1, Prefix::Borrow);
+//     assert_eq!(test1.unwrap().1, BorrowInfo::Var(VarInfo {
+//         mutable: false,
+//         prefix: Prefix::Borrow,
+//         ident: "a".to_string(),
+
+//         scope: 0,
+//         mem_pos: 0,
+
+//         pointer_scope_pos: 0,
+//         pointer_mem_pos: 0,
+
+//         num_borrows: 0,
+//         num_borrowmuts: 0,
+//     }, false));
 
 //     let test2 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; *a = 4;}")).unwrap().1);
-//     assert_eq!(test2.unwrap().1, Prefix::None);
+//     assert_eq!(test2.unwrap().1, BorrowInfo::Var(VarInfo {
+//         mutable: false,
+//         prefix: Prefix::DeRef(1),
+//         ident: "a".to_string(),
+
+//         scope: 0,
+//         mem_pos: 0,
+
+//         pointer_scope_pos: 0,
+//         pointer_mem_pos: 0,
+
+//         num_borrows: 0,
+//         num_borrowmuts: 0,
+//     }, false));
 // }
 
 

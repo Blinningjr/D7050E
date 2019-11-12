@@ -6,8 +6,8 @@ use crate::parser::varprefix::Prefix;
 */
 #[derive(Debug, PartialEq, Clone)]
 pub enum BorrowInfo {
-    Value(ValueInfo),
-    Var(VarInfo),
+    Value(ValueInfo, bool),
+    Var(VarInfo, bool),
 }
 
 
@@ -19,6 +19,9 @@ pub struct VarInfo {
     pub mutable: bool,
     pub prefix: Prefix,
     pub ident: String,
+
+    pub scope: i32,
+    pub mem_pos: usize,
 
     pub pointer_scope_pos: i32,
     pub pointer_mem_pos: usize,
@@ -34,6 +37,9 @@ pub struct VarInfo {
 pub struct ValueInfo {
     pub mutable: bool,
     pub prefix: Prefix,
+
+    pub scope: i32,
+    pub mem_pos: usize,
 
     pub num_borrows: i32,
     pub num_borrowmuts: i32,

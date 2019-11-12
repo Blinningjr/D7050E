@@ -8,6 +8,4 @@ pub enum Prefix {
     BorrowMut,
     DeRef(i32),
     None,
-    
-    ReturnPrefix(Box<Prefix>),
 }
