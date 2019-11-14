@@ -38,26 +38,27 @@
     Borrow = "&" ;
     BorrowMut = "&mut" ;
     DeRef = "*", { "*" } ;
-    None = "" ;
     Prefix = Mut | Borrow | BorrowMut | DeRef | None ;
 
 
 (* Defenition of Expr *)
     Num = int ;
     Bool = "true" | "false" ;
-    Var = Prefix, ident ;
-    VarWithType = ident, ":", Prefix, MyType ;
+    Type = MyType ;
+    Prefixed = Prefix, (VarWithType | FuncCall | UnOp | Type | Parentheses | Num | Bool | Var) ;
+    Var = ident ;
+    VarWithType = Var, ":", (Prefixed | Type) ;
     UnOp = Op, Expr ;
     BinOp = Expr, Op, Expr ;
-    Let = Prefix, ident, ":", Prefix, MyType, "=", Expr, ";" ;
-    Assign = Prefix, ident, "=",  Expr, ";" ;
+    Let = (Prefix | VarWithType), "=", Expr, ";" ;
+    Assign = (Prefixed | Var), "=",  Expr, ";" ;
     If = "if", Expr, Body, [ "else", Body ] ; 
     Body = "{", {Expr}, "}" ;
     While = "while", Expr, Body ;
-    Func = "Fn", ident, "(", [ VarWithType, { ",", VarWithType } ], ")", [ "->", MyType ], Body ;
+    Func = "Fn", Var, "(", [ VarWithType, { ",", VarWithType } ], ")", [ "->", (Prefixed | MyType) ], Body ;
     Return = "return", Expr, ";" ;
-    FuncCall = ident, "(", [ Expr, { ",", Expr } ], ")", [ ";" ] ;
+    FuncCall = Var, "(", [ Expr, { ",", Expr } ], ")", [ ";" ] ;
     Funcs =  { Func } ;
-    parentheses = "(", Expr, ")" ;
+    Parentheses = "(", Expr, ")" ;
     Expr = Bool | Num | Var | VarWithType | UnOp | BinOp | Let | Assign 
-        | If | Body | While | Func | Return | FuncCall | Funcs | parentheses;
+        | If | Body | While | Func | Return | FuncCall | Funcs | Parentheses;
