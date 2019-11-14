@@ -1,0 +1,211 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{lscape}
+\usepackage{graphicx}
+\usepackage{stfloats}
+\usepackage{float}
+\usepackage{import}
+\usepackage{adjustbox}
+\usepackage{hyperref}
+\usepackage{apacite}
+\usepackage{fancyhdr}
+
+
+\pagestyle{fancy}
+\lhead{Niklas Lundberg}
+\rhead{inaule-6@student.ltu.se}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
+\title{Structural Operational Semantics}
+\author{Niklas Lundberg \\ inaule-6@student.ltu.se}
+\date{\today}
+
+\begin{document}
+
+    \maketitle
+    \newpage
+    \section{SOS} 
+        \subsection{i32}
+                \begin{equation}
+                    \langle e, \sigma \rangle\Downarrow n
+                \end{equation}
+                
+            \subsection{bool}
+                \begin{equation} 
+                    \langle e, \sigma \rangle\Downarrow b
+                \end{equation}   
+                
+            \subsection{Unop}
+                \subsubsection{Not}
+                    \begin{equation}  
+                        \frac{\langle b, \sigma \rangle\Downarrow false}
+                        {\langle !b, \sigma \rangle\Downarrow true }
+                    \end{equation}
+                    \begin{equation}
+                        \frac{\langle b, \sigma \rangle\Downarrow true}
+                        {\langle !b, \sigma \rangle\Downarrow false }
+                    \end{equation}
+                    
+                \subsubsection{Sub}
+                    \begin{equation}  
+                        \frac{\langle e, \sigma \rangle\Downarrow n}
+                        {\langle -e, \sigma \rangle\Downarrow - n }
+                    \end{equation}
+                    
+            \subsection{Binop}
+                \subsubsection{Add}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 + e2, \sigma \rangle\Downarrow n1 + n2}
+                    \end{equation}
+                    
+                \subsubsection{Sub}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 - e2, \sigma \rangle\Downarrow n1 - n2}
+                    \end{equation}
+                    
+                \subsubsection{Div}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 / e2, \sigma \rangle\Downarrow n1 / n2}
+                    \end{equation}
+                    
+                \subsubsection{Multiplication}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 * e2, \sigma \rangle\Downarrow n1 * n2}
+                    \end{equation}
+                
+                \subsubsection{Mod}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 \% e2, \sigma \rangle\Downarrow n1 \% n2}
+                    \end{equation}
+                    
+                \subsubsection{And}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow false \: \langle b2, \sigma \rangle\Downarrow false}
+                        {\langle e1 \&\& e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow true \: \langle b2, \sigma \rangle\Downarrow false}
+                        {\langle e1 \&\& e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow false \: \langle b2, \sigma \rangle\Downarrow true}
+                        {\langle e1 \&\& e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow true \: \langle b2, \sigma \rangle\Downarrow true}
+                        {\langle e1 \&\& e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    
+                \subsubsection{Or}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow false \: \langle b2, \sigma \rangle\Downarrow false}
+                        {\langle e1 || e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow true \: \langle b2, \sigma \rangle\Downarrow false}
+                        {\langle e1 || e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow false \: \langle b2, \sigma \rangle\Downarrow true}
+                        {\langle e1 || e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle b1, \sigma \rangle\Downarrow true \: \langle b2, \sigma \rangle\Downarrow true}
+                        {\langle e1 || e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    
+                \subsubsection{Not equal}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 != e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n \: \langle e2, \sigma \rangle\Downarrow n}
+                        {\langle e1 != e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    
+                \subsubsection{Equal}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 == e2, \sigma \rangle\Downarrow false}
+                    \end{equation}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n \: \langle e2, \sigma \rangle\Downarrow n}
+                        {\langle e1 == e2, \sigma \rangle\Downarrow true}
+                    \end{equation}
+                    
+                \subsubsection{Less or equal then}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 <= e2, \sigma \rangle\Downarrow n1 <= n2}
+                    \end{equation}
+                    
+                \subsubsection{Larger or equal then}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 >= e2, \sigma \rangle\Downarrow n1 >= n2}
+                    \end{equation}
+            
+                \subsubsection{Less then}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 < e2, \sigma \rangle\Downarrow n1 < n2}
+                    \end{equation}
+                    
+                \subsubsection{Larger then}
+                    \begin{equation}  
+                        \frac{\langle e1, \sigma \rangle\Downarrow n1 \: \langle e2, \sigma \rangle\Downarrow n2}
+                        {\langle e1 > e2, \sigma \rangle\Downarrow n1 > n2}
+                    \end{equation}
+                    
+            \subsection{Assigment}
+                \begin{equation}  
+                        \frac{}
+                        {\langle x := n, \sigma \rangle\Downarrow \sigma [ x := n ]}
+                \end{equation}
+                
+            \subsection{Variable}
+                \begin{equation}  
+                        \sigma [ x := n ] = n
+                \end{equation}
+                
+            \subsection{If}
+                \begin{equation}  
+                    \frac{\langle b, \sigma \rangle\Downarrow true \: \langle c1, \sigma \rangle\Downarrow \sigma'}
+                    {\langle \textbf{if } b \textbf{ then } c1 \textbf{ else } c2, \sigma \rangle\Downarrow \sigma'}
+                \end{equation}
+                \begin{equation}  
+                    \frac{\langle b, \sigma \rangle\Downarrow false \: \langle c2, \sigma \rangle\Downarrow \sigma''}
+                    {\langle \textbf{if } b \textbf{ then } c1 \textbf{ else } c2, \sigma \rangle\Downarrow \sigma''}
+                \end{equation}
+                
+            \subsection{While}
+                \begin{equation}  
+                    \frac{\langle b, \sigma \rangle\Downarrow false }
+                    {\langle \textbf{while } b \textbf{ do } c, \sigma \rangle\Downarrow \sigma}
+                \end{equation}
+                \begin{equation}  
+                    \frac{\langle b, \sigma \rangle\Downarrow true \: \langle c, \sigma \rangle\Downarrow \sigma' \langle \textbf{while } b \textbf{ do } c, \sigma' \rangle\Downarrow \sigma'' }
+                    {\langle \textbf{while } b \textbf{ do } c, \sigma \rangle\Downarrow \sigma''}
+                \end{equation}
+                
+            \subsection{Function call}
+                \begin{equation}  
+                    \frac{\langle c, \sigma \rangle\Downarrow \sigma' }
+                    {\langle \textbf{call } c, \sigma \rangle\Downarrow \sigma'}
+                \end{equation}
+                
+            \subsection{Return}
+                \begin{equation}  
+                    \frac{\langle c, \sigma \rangle\Downarrow \sigma' }
+                    {\langle \textbf{return } c, \sigma \rangle\Downarrow \sigma'}
+                \end{equation}
+    
+\end{document}
