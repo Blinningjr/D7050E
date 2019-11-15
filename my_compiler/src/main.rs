@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /**
  * Required for reading files.
  */
@@ -14,6 +16,7 @@ mod borrowchecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
+pub use crate::typechecker::typecheck_ast;
 pub use crate::borrowchecker::borrowcheck_ast;
 
 
@@ -29,8 +32,8 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = borrowcheck_ast(parse("
-        fn tio(i: &i32) -> i32 {
+    let f = typecheck_ast(parse("
+        fn tio(i: &i32) -> bool {
             if i < 50 {
                 return tio(&(i + 1));
             } 
@@ -41,11 +44,11 @@ fn main() {
 
         fn main() {
             let a: i32 = 2; 
-            tio(&a);
+            tio(&a, 1);
         }
         ").unwrap().1);
     // let f = parse(contents.as_str());
-    println!("Output = {:#?}" , f); // print parsed ast.
+    // println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
     // interp_ast(f.unwrap().1);
     // let mut a = 10;

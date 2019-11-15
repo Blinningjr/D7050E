@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /** 
  *  Defining all of my types.
  */

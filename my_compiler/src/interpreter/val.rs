@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /** 
  *  Defins Val so bool and i32 can be returnd.
 */

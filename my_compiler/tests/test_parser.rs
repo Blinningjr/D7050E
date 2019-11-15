@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /***  
  *  Tests for parser functions.
  *

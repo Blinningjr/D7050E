@@ -1,9 +1,12 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 
 use super::enverror::{EnvError, Result};
 use crate::parser::expr::Expr;
 use crate::parser::mytype::MyType;
 
+pub use super::ErrorMessage;
 
 /** 
  *  Defines Scope. 
@@ -94,6 +97,7 @@ impl<'a> Scope<'a> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Env<'a> {
     scopes: Vec<Scope<'a>>,
+    ems: Vec<ErrorMessage<'a>>,
     scope_pos: i32,
 }
 
@@ -106,6 +110,7 @@ impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         Env {
             scopes: Vec::new(),
+            ems: Vec::new(),
             scope_pos: -1,
         }
     }
@@ -204,5 +209,16 @@ impl<'a> Env<'a> {
 
     pub fn get_func(&mut self) -> Option<Expr<'a>> {
         self.scopes[self.scope_pos as usize].get_f()
+    }
+
+    pub fn add_errormessage(&mut self, em: ErrorMessage<'a>) -> () {
+        self.ems.push(em);
+    }
+
+    pub fn print_errormessages(&mut self) -> () {
+        let ems = self.ems.clone();
+        for em in ems {
+            println!("Error: {:?} \n {:?} \n", em.message, em.context.0);
+        }
     }
 }
