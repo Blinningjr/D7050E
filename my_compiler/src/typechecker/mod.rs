@@ -156,7 +156,11 @@ fn typecheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr
                 _ => panic!("typecheck_let"),
             };
 
-            env.store_var(ident, t.clone().1);
+            let tr = env.store_var(ident, t.clone().1);
+            match tr {
+                Ok(_) => (),
+                Err(_) => env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: e.clone(),}),
+            };
             return Ok((e.clone(), check_if_same_type(e.clone(), env, t.1, vt)));
         },
         _ => panic!("typecheck_let"),
@@ -349,7 +353,11 @@ fn add_func_to_typechecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IRes
                 _ => panic!("add_func_to_typechecking_list"),
             };
 
-            env.store_func(id, t_param, rt.clone().1, e.clone().1);
+            let tr = env.store_func(id, t_param, rt.clone().1, e.clone().1);
+            match tr {
+                Ok(_) => (),
+                Err(_) => env.add_errormessage(ErrorMessage{message: "Func already declared".to_string(), context: e.clone(),}),
+            };
             return Ok((e, rt.1));
         },
         _ => panic!("add_func_to_typechecking_list"),
@@ -443,7 +451,11 @@ fn typecheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult
                                 },
                                 _ => panic!("typecheck_funcs_in_list"),
                             };
-                            env.store_var(ident, typ.clone().1);
+                            let tr = env.store_var(ident, typ.clone().1);
+                            match tr {
+                                Ok(_) => (),
+                                Err(_) => env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: expr.clone(),}),
+                            };
                         }
                         _ => panic!("typecheck_funcs_in_list"),
                     }

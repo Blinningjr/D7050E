@@ -44,6 +44,7 @@ fn main() {
 
         fn main() {
             let a: i32 = 2; 
+            let a: i32 = 2; 
             tio(&a, 1);
         }
         ").unwrap().1);

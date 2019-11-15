@@ -135,28 +135,30 @@ impl<'a> Env<'a> {
 
     /**
      *  Stores a variable in the current scope. 
-     *  Panic!: If there already exists a variable with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_var(&mut self, key: &'a str, t: MyType) -> Option<MyType> {
+    pub fn store_var(&mut self, key: &'a str, t: MyType) -> Result<Option<MyType>> {
         let res = self.load_var(key);
         match res {
-            Ok(_) => panic!("store_var: {:?} {:?}", key, t),
-            Err(_) => return self.scopes[self.scope_pos as usize].store_v(key, t),
-        }
+            Ok(_) => return Err(EnvError),
+            Err(_) => {
+                return Ok(self.scopes[self.scope_pos as usize].store_v(key, t));
+            },
+        };
     }
 
     /**
      *  Stores a function in the current scope. 
-     *  Panic!: If there already exists a function with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_func(&mut self, key: &'a str, ts: Vec<MyType>, t: MyType, expr: Expr<'a>) -> Option<(Vec<MyType>, MyType)> {
+    pub fn store_func(&mut self, key: &'a str, ts: Vec<MyType>, t: MyType, expr: Expr<'a>) -> Result<Option<(Vec<MyType>, MyType)>> {
         let res = self.load_func(key);
         match res {
-            Ok(_) => panic!("store_func"),
-            Err(_) => self.scopes[self.scope_pos as usize].store_f(key, ts, t, expr),
-        }
+            Ok(_) => return Err(EnvError),
+            Err(_) => {
+                return Ok(self.scopes[self.scope_pos as usize].store_f(key, ts, t, expr));
+            },
+        };
     }
 
     /**
@@ -218,7 +220,10 @@ impl<'a> Env<'a> {
     pub fn print_errormessages(&mut self) -> () {
         let ems = self.ems.clone();
         for em in ems {
-            println!("Error: {:?} \n {:?} \n", em.message, em.context.0);
+            println!(
+                "Error: {:?} \n 
+                {:?} \n", 
+                em.message, em.context.0);
         }
     }
 }
