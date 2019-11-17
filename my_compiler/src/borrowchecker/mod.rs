@@ -22,7 +22,7 @@ use crate::parser::{
 
 #[path = "../interpreter/enverror.rs"]
 pub mod enverror;
-use enverror::{Result, EnvError};
+// use enverror::{Result, EnvError};
 
 pub mod env;
 pub use env::Env;
@@ -47,7 +47,7 @@ fn borrowcheck_expr<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
         Expr::Bool(_) => borrowcheck_bool(e, env),
         Expr::UnOp(_, _) => borrowcheck_unop(e, env),
         Expr::BinOp(_, _, _) => borrowcheck_binop(e, env),
-        Expr::VarWithType(_, _) => borrowcheck_varWithType(e, env),
+        Expr::VarWithType(_, _) => borrowcheck_var_with_type(e, env),
         Expr::Let(_, _) => borrowcheck_let(e, env),
         Expr::Assign(_, _) => borrowcheck_assign(e, env),
         Expr::Var(_) => borrowcheck_var(e, env),
@@ -209,7 +209,7 @@ fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
 }
 
 
-fn borrowcheck_varWithType<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
+fn borrowcheck_var_with_type<'a>(e: SpanExpr<'a>, _env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match e.1.clone() {
         Expr::VarWithType(var, typ) => {
             let res;
@@ -251,18 +251,18 @@ fn borrowcheck_varWithType<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a
                                         num_borrowmuts: 0,
                                     }, false, false);
                                 },
-                                _ => panic!("borrowcheck_varWithType"),
+                                _ => panic!("borrowcheck_var_with_type"),
                             };
                         },
-                        _ => panic!("borrowcheck_varWithType"),
+                        _ => panic!("borrowcheck_var_with_type"),
                     };
                 },
-                _ => panic!("borrowcheck_varWithType"),
+                _ => panic!("borrowcheck_var_with_type"),
             };
 
             return Ok((e, res));
         },
-        _ => panic!("borrowcheck_varWithType"),
+        _ => panic!("borrowcheck_var_with_type"),
     }
 }
 
@@ -273,7 +273,7 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
     match (e.1).clone() {
         Expr::Let(var, value) => {
             let mut var_res = borrowcheck_expr(*var, env)?.1;
-            let mut value_res = borrowcheck_expr(*value, env)?.1;
+            let value_res = borrowcheck_expr(*value, env)?.1;
             let mut pointer;
 
             let p2;
@@ -282,7 +282,7 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
                     if b {
                         let lv = env.load_val(v.mem_pos, 0, v.scope).unwrap();
                         pointer = lv.clone().1;
-                        value_res = lv.clone().0;
+                        // value_res = lv.clone().0;
                         match var_res.clone() {
                             BorrowInfo::Var(v, _, _) => {
                                 p2 = v.prefix;
@@ -296,7 +296,7 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
                         pointer = (v.scope, v.mem_pos);
                         match p2.clone() {
                             Prefix::None => {
-                                pointer =  env.store_var(value_res.clone());
+                                pointer = env.store_var(value_res.clone());
                             },
                             _ => {},
                         };
@@ -306,7 +306,7 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
                     if b {
                         let lv = env.load_val(v.mem_pos, 0, v.scope).unwrap();
                         pointer = lv.clone().1;
-                        value_res = lv.clone().0;
+                        // value_res = lv.clone().0;
                         match var_res.clone() {
                             BorrowInfo::Var(v, _, _) => {
                                 p2 = v.prefix;
@@ -548,12 +548,12 @@ fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
             match val.clone().1 {
                 BorrowInfo::Value(v, _, _) => {
                     match v.prefix {
-                        Prefix::DeRef(_) => panic!("borrowcheck_if"),
-                        Prefix::Mut => panic!("borrowcheck_if"),
+                        Prefix::DeRef(_) => panic!("borrowcheck_if 1"),
+                        Prefix::Mut => panic!("borrowcheck_if 2"),
                         _ => (),
                     };
                 },
-                _ => panic!("borrowcheck_if"),
+                _ => panic!("borrowcheck_if 3"),
             };
 
 
@@ -590,14 +590,14 @@ fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
             if b_ib {
                 if b_eb {
                     if p_ib != p_eb {
-                        panic!("borrowcheck_if {:?}");
+                        panic!("borrowcheck_if {:?} {:?}", p_ib, p_eb);
                     }
                 } 
             }
             
             return Ok(val);
         },
-        _ => panic!("borrowcheck_if"),
+        _ => panic!("borrowcheck_if 0"),
     }
 }
 
@@ -645,13 +645,13 @@ fn add_func_to_borrowchecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IR
             let mut t_var = Vec::new();
             for vt in param {
                 
-                let p = borrowcheck_varWithType(vt.clone(), env)?;
+                let p = borrowcheck_var_with_type(vt.clone(), env)?;
                 match p.1 {
                     BorrowInfo::Var(v, _ , _) => {
                         t_param.push(v.prefix.clone());
                         t_var.push((v.ident, v.prefix.clone()));
                     },
-                    BorrowInfo::Value(v, _, _) => panic!("add_func_to_borrowchecking_list"),
+                    BorrowInfo::Value(_, _, _) => panic!("add_func_to_borrowchecking_list"),
                 };
             }
             let ident;
@@ -700,9 +700,9 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
                 panic!("borrowcheck_func_call 3");
             }
             let mut i = 0;
-            let mut res = BorrowInfo::Value(ValueInfo {
+            let res = BorrowInfo::Value(ValueInfo {
                 mutable: false, 
-                prefix: Prefix::None, 
+                prefix: return_p, 
 
                 scope: -1,
                 mem_pos: 0,
@@ -712,9 +712,9 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
             }, false, false);
             for p in param_p {
                 let p1;
-                res = borrowcheck_expr(param[i].clone(), env)?.1;
+                let res1 = borrowcheck_expr(param[i].clone(), env)?.1;
                 
-                match res.clone() {
+                match res1.clone() {
                     BorrowInfo::Value(v, _, _) => p1 = v.prefix,
                     BorrowInfo::Var(v, _, _) => p1 = v.prefix,
                 };
@@ -738,7 +738,7 @@ fn borrowcheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
     match (e.1).clone() {
         Expr::Funcs(es) => {
             for expr in es {
-                add_func_to_borrowchecking_list(expr, env);
+                let _t = add_func_to_borrowchecking_list(expr, env);
             }
 
             borrowcheck_funcs_in_list(e.clone(), env);
@@ -762,7 +762,7 @@ fn borrowcheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
 /** 
  *  Adds to list of func that need borrowchecking in ast.
 */
-fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
+fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
     while env.get_funcs_len() > 0 {
         let e;
         match env.get_func() {
@@ -771,7 +771,7 @@ fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
         }
 
         match e.clone() {
-            Expr::Func(ident, param, t, body) => {
+            Expr::Func(_ident, param, t, body) => {
                 env.crate_scope();
                 let typ = borrowcheck_expr(*t, env).unwrap().1;
                 let pt;
@@ -781,7 +781,7 @@ fn borrowcheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                 };
 
                 for v in param {
-                    let mut val = borrowcheck_varWithType(v, env).unwrap().1;
+                    let mut val = borrowcheck_var_with_type(v, env).unwrap().1;
     
                     match val.clone() {
                         BorrowInfo::Var(mut v, _, _) => {

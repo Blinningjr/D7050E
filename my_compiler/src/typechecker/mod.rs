@@ -7,7 +7,7 @@
 mod parser;
 use crate::parser::{
     SpanExpr,
-    SpanOp,
+    // SpanOp,
     expr::Expr,
     op::Op,
     mytype::MyType,
@@ -16,7 +16,7 @@ use crate::parser::{
 
 #[path = "../interpreter/enverror.rs"]
 pub mod enverror;
-use enverror::{Result, EnvError};
+// use enverror::{Result, EnvError};
 
 pub mod env;
 pub use env::Env;
@@ -150,7 +150,7 @@ fn typecheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr
             let t;
             match (*ty).1 {
                 Expr::Type(tt) => t = tt,
-                Expr::Prefixed(p, ttt) => {
+                Expr::Prefixed(_, ttt) => {
                     match (*ttt).1 {
                         Expr::Type(tt) => t = tt,
                         _ => panic!("typecheck_let"),
@@ -226,7 +226,7 @@ fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
                 match expr.1 {
                     Expr::Return(v) => {
                         let val = typecheck_expr(*v, env)?;
-                        typecheck_funcs_in_list(e.clone(), env);
+                        let _t1 = typecheck_funcs_in_list(e.clone(), env);
                         env.pop_scope();
                         return match val.1 {
                             MyType::Int32 => Ok((val.0, MyType::ReturnType(Box::new(MyType::Int32)) )),
@@ -239,7 +239,7 @@ fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
                         res = typecheck_expr(expr, env);
                         match res.clone()?.1 {
                             MyType::ReturnType(_) => {
-                                typecheck_funcs_in_list(e.clone(), env);
+                                let _t2 = typecheck_funcs_in_list(e.clone(), env);
                                 env.pop_scope();
                                 return res;
                             },
@@ -248,7 +248,7 @@ fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
                     },
                 }
             }
-            typecheck_funcs_in_list(e.clone(), env);
+            let _t3 = typecheck_funcs_in_list(e.clone(), env);
             env.pop_scope();
             return res;
         },
@@ -427,10 +427,10 @@ fn typecheck_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
     match (e.1).clone() {
         Expr::Funcs(es) => {
             for expr in es {
-                add_func_to_typechecking_list(expr, env);
+                let _t1 = add_func_to_typechecking_list(expr, env);
             }
 
-            typecheck_funcs_in_list(e.clone(), env);
+            let _t2 = typecheck_funcs_in_list(e.clone(), env);
             env.pop_scope();
             return Ok((e, MyType::NoType));
         },
