@@ -1,4 +1,6 @@
-/***  
+#![allow(dead_code)]
+
+/**
  *  Tests for typechecker functions.
  *
  *  Too run: 'cargo test'
@@ -247,6 +249,30 @@ fn test_typecheck_funcs() {
         fn main() {
             let a: i32 = 2; 
             tio(2);
+        }
+        ").unwrap().1);
+    assert_eq!(test1.unwrap().1, MyType::NoType);
+}
+
+/**
+ *  Test typechecking funcs with borrowing.
+ */
+#[test]
+fn test_typecheck_funcs_with_borrowing() {
+    let test1 = typecheck_ast(parse(
+        "
+        fn tio(i: &i32) -> i32 {
+            if i < 50 {
+                return tio(&(i + 1));
+            } 
+            else{
+                return i;       
+            }
+        }
+
+        fn main() {
+            let a: i32 = 2; 
+            tio(&a);
         }
         ").unwrap().1);
     assert_eq!(test1.unwrap().1, MyType::NoType);

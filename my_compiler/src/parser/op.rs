@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /**
  *  All binary operators.
  */

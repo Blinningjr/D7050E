@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /**
  * Required for reading files.
  */
@@ -14,12 +16,13 @@ mod borrowchecker;
 
 pub use crate::parser::parse;
 pub use crate::interpreter::interp_ast;
+pub use crate::typechecker::typecheck_ast;
 pub use crate::borrowchecker::borrowcheck_ast;
 
 
 fn main() {
-    // let contents = fs::read_to_string("src/test_code.rs")
-    //     .expect("Something went wrong reading the file");
+    let contents = fs::read_to_string("src/test_code.rs")
+        .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
     // let f = parse("{
@@ -29,23 +32,9 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = borrowcheck_ast(parse("
-        fn tio(i: &i32) -> i32 {
-            if i < 50 {
-                return tio(&(i + 1));
-            } 
-            else{
-                return i;       
-            }
-        }
-
-        fn main() {
-            let a: i32 = 2; 
-            tio(&a);
-        }
-        ").unwrap().1);
+    let f = typecheck_ast(parse(&contents).unwrap().1);
     // let f = parse(contents.as_str());
-    println!("Output = {:#?}" , f); // print parsed ast.
+    // println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
     // interp_ast(f.unwrap().1);
     // let mut a = 10;
