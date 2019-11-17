@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 pub mod enverror;
-use enverror::{Result, EnvError};
+use enverror::{Result}; //EnvError};
 
 pub mod val;
 pub use val::Val;
@@ -65,7 +65,7 @@ pub fn interp_ast<'a>(e: SpanExpr<'a>) -> Result<SpanVal<'a>> {
     // env.store_var(&"a", Val::Num(5), Prefix::Mut);
     let res = interp_expr(e, &mut env);
     // println!("{:#?}", res);
-    println!("{:#?}", env);
+    // println!("{:#?}", env);
     res
 }
 

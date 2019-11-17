@@ -25,13 +25,21 @@ fn main() {
         .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
-    // let f = parse("{
-    //     let mut a: bool = true; 
-    //     let mut b: &mut bool = &mut a; 
-    //     let c: &mut bool = &mut b; 
-    //     **c = false; 
-    //     return a;
-    //     }");
+    // let f = interp_ast(parse( "  
+    // fn tio(i: i32) -> i32 {
+    //     if i < 50 {
+    //         return tio(i + 1);
+    //     } 
+    //     else{
+    //         return i;       
+    //     }
+    // }
+
+    // fn main() {
+    //     let a: i32 = 2; 
+    //     tio(2);
+    // }
+    // ").unwrap().1);
     let f = typecheck_ast(parse(&contents).unwrap().1);
     // let f = parse(contents.as_str());
     // println!("Output = {:#?}" , f); // print parsed ast.

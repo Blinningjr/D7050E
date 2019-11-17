@@ -7,8 +7,8 @@ use crate::parser::expr::Expr;
 use crate::parser::varprefix::Prefix;
 
 use super::{
-    ValueInfo,
-    VarInfo,
+    // ValueInfo,
+    // VarInfo,
     BorrowInfo,
 };
 
@@ -307,45 +307,6 @@ impl<'a> Env<'a> {
         self.scopes[pos as usize].update_val(mem_pos, value.clone());
         return value;
     }
-
-    // /**
-    //  *  Helper function for assign_val.
-    //  */
-    // pub fn assign_val(&mut self, mem_pos: usize, pos: i32, val: BorrowInfo, numderef: i32) -> () {
-    //     if pos >= 0 {
-    //         let res = self.scopes[pos as usize].get_val(mem_pos);
-    //         match res {
-    //             Ok(bi) => {
-    //                 let vv;
-    //                 if numderef > 0 {
-    //                     match bi {
-    //                         BorrowInfo::Var(v, _) => {
-    //                             vv = self.load_val(v.pointer_mem_pos, numderef- 1, v.pointer_scope_pos)?.1;
-    //                         },
-    //                         _ => panic!("assign_val"),
-    //                     };
-    //                 }
-    //                 let vall;
-    //                 match val {
-    //                     BorrowInfo::Value(v, b) => {
-
-    //                     },
-    //                     BorrowInfo::Value(v, b) => {
-                            
-    //                     },
-    //                 };
-
-    //                 self.scopes[(vv.1).0 as usize].update_val((vv.1).1, vall.clone());
-    //                 return ();
-    //             },
-    //             _ => {
-    //                 let prev = self.scopes[pos as usize].get_prev();
-    //                 return self.assign_val(mem_pos, prev, val, numderef)
-    //             },
-    //         }
-    //     }
-    //     panic!("assign_val");
-    // }
 
     /**
      *  Gets the scope were a var is located.

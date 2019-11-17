@@ -249,7 +249,7 @@ fn test_interp_recursiv_func() {
  */
 #[test]
 fn test_interp_ast() {
-    let test1 = interp_ast(parse_expr(Span::new(
+    let test1 = interp_ast(parse(
         "  
         fn tio(i: i32) -> i32 {
             if i < 50 {
@@ -265,9 +265,9 @@ fn test_interp_ast() {
             tio(2);
         }
         "
-    )).unwrap().1);
+    ).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Empty);
+    assert_eq!(test1.unwrap().1, Val::Num(50));
 }
 
 

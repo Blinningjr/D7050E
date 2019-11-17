@@ -66,7 +66,7 @@ fn test_borrowcheck_int() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_int_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" mut 2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" mut 2")).unwrap().1);
 }
 
 
@@ -76,7 +76,7 @@ fn test_borrowcheck_int_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_int_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" *2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" *2")).unwrap().1);
 }
 
 
@@ -123,7 +123,7 @@ fn test_borrowcheck_bool() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_bool_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" mut false")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" mut false")).unwrap().1);
 }
 
 
@@ -133,7 +133,7 @@ fn test_borrowcheck_bool_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_bool_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" *2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" *2")).unwrap().1);
 }
 
 
@@ -160,7 +160,7 @@ fn test_borrowcheck_unop() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_unop_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" mut !false")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" mut !false")).unwrap().1);
 }
 
 
@@ -170,7 +170,7 @@ fn test_borrowcheck_unop_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_unop_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" * -2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" * -2")).unwrap().1);
 }
 
 
@@ -207,7 +207,7 @@ fn test_borrowcheck_binop() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" &mut 1-2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" &mut 1-2")).unwrap().1);
 }
 
 
@@ -217,7 +217,7 @@ fn test_borrowcheck_binop_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("  &mut 10- &mut 2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("  &mut 10- &mut 2")).unwrap().1);
 }
 
 
@@ -227,7 +227,7 @@ fn test_borrowcheck_binop_panic_2() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_3() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" * 1-2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" * 1-2")).unwrap().1);
 }
 
 
@@ -237,7 +237,7 @@ fn test_borrowcheck_binop_panic_3() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_4() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("  * 10- * 2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("  * 10- * 2")).unwrap().1);
 }
 
 
@@ -247,7 +247,7 @@ fn test_borrowcheck_binop_panic_4() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_5() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new(" mut 1-2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new(" mut 1-2")).unwrap().1);
 }
 
 
@@ -257,7 +257,7 @@ fn test_borrowcheck_binop_panic_5() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_binop_panic_6() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("  mut 10-  mut 2")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("  mut 10-  mut 2")).unwrap().1);
 }
 
 
@@ -323,7 +323,7 @@ fn test_borrowcheck_let() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_let_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("let a: bool = &true;")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("let a: bool = &true;")).unwrap().1);
 }
 
 
@@ -333,7 +333,7 @@ fn test_borrowcheck_let_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_let_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &bool = true;")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("let a: &bool = true;")).unwrap().1);
 }
 
 
@@ -343,7 +343,7 @@ fn test_borrowcheck_let_panic_2() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_let_panic_3() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &bool = &mut true;")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("let a: &bool = &mut true;")).unwrap().1);
 }
 
 
@@ -353,7 +353,7 @@ fn test_borrowcheck_let_panic_3() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_let_panic_4() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("let a: &mut bool = &true;")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("let a: &mut bool = &true;")).unwrap().1);
 }
 
 
@@ -402,7 +402,7 @@ fn test_borrowcheck_assign() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_assign_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; a = 4;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; a = 4;}")).unwrap().1);
 }
 
 
@@ -412,7 +412,7 @@ fn test_borrowcheck_assign_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_assign_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; *a = 4;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; *a = 4;}")).unwrap().1);
 }
 
 
@@ -422,7 +422,7 @@ fn test_borrowcheck_assign_panic_2() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_assign_panic_3() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; a = &4;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; a = &4;}")).unwrap().1);
 }
 
 
@@ -432,7 +432,7 @@ fn test_borrowcheck_assign_panic_3() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_assign_panic_4() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; a = 4;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; a = 4;}")).unwrap().1);
 }
 
 
@@ -513,7 +513,7 @@ fn test_borrowcheck_var() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_var_panic_1() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = **a;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = **a;}")).unwrap().1);
 }
 
 
@@ -523,7 +523,7 @@ fn test_borrowcheck_var_panic_1() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_var_panic_2() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = a;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: i32 = a;}")).unwrap().1);
 }
 
 
@@ -533,7 +533,7 @@ fn test_borrowcheck_var_panic_2() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_var_panic_3() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; let b: &i32 = a;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &mut i32 = &mut 10; let b: &i32 = a;}")).unwrap().1);
 }
 
 
@@ -543,7 +543,7 @@ fn test_borrowcheck_var_panic_3() {
 #[test]
 #[should_panic]
 fn test_borrowcheck_var_panic_4() {
-    let test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &mut i32 = a;}")).unwrap().1);
+    let _test1 = borrowcheck_ast(parse_expr(Span::new("{let a: &i32 = &10; let b: &mut i32 = a;}")).unwrap().1);
 }
 
 
@@ -647,9 +647,9 @@ fn test_borrowcheck_func() {
             }")).unwrap().1);
     assert_eq!(test1.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
-        prefix: Prefix::Borrow, 
+        prefix: Prefix::None, 
 
-        scope: 0,
+        scope: -1,
         mem_pos: 0,
 
         num_borrows: 0, 
@@ -663,10 +663,10 @@ fn test_borrowcheck_func() {
             tio(&mut 2)
             }")).unwrap().1);
     assert_eq!(test2.unwrap().1, BorrowInfo::Value(ValueInfo {
-        mutable: true, 
-        prefix: Prefix::BorrowMut, 
+        mutable: false, 
+        prefix: Prefix::None, 
 
-        scope: 0,
+        scope: -1,
         mem_pos: 0,
 
         num_borrows: 0, 
@@ -683,9 +683,9 @@ fn test_borrowcheck_func() {
             }")).unwrap().1);
     assert_eq!(test3.unwrap().1, BorrowInfo::Value(ValueInfo {
         mutable: false, 
-        prefix: Prefix::Borrow, 
+        prefix: Prefix::None, 
 
-        scope: 0,
+        scope: -1,
         mem_pos: 0,
 
         num_borrows: 0, 
@@ -704,7 +704,7 @@ fn test_borrowcheck_funcs() {
                 return tio(&(i + 1));
             } 
             else{
-                return i;       
+                return *i;       
             }
         }
 
@@ -784,7 +784,7 @@ fn test_borrowcheck_multi_borrow_and_borrowmut() {
  */
 #[test]
 #[should_panic]
-fn test_borrowcheck_borrowmut_and__multi_borrow() {
+fn test_borrowcheck_borrowmut_and_multi_borrow() {
     let test1 = borrowcheck_ast(parse("
         fn main() {
             let mut a: i32 = 2; 

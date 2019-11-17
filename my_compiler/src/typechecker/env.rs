@@ -8,9 +8,8 @@ use crate::parser::mytype::MyType;
 
 pub use super::ErrorMessage;
 
-use crate::parser::{Slice, FindSubstring, alpha1, preceded, multispace0, map, Span};
+use crate::parser::{Slice, FindSubstring};
 use core::ops::RangeTo;
-use core::ops::Range;
 use core::ops::RangeFrom;
 
 /** 
