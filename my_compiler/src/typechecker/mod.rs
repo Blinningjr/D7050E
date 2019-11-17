@@ -69,10 +69,12 @@ fn typecheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
             let e_type = typecheck_expr(*expr, env)?;
             match op.1 {
                 Op::Not => {
-                    return Ok((e.clone(), check_if_same_type(e.clone(), env, e_type.1, MyType::Boolean)));
+                    let start = (op.clone().0).offset;
+                    return Ok((e.clone(), check_if_same_type(e.clone(), start, env, e_type.1, MyType::Boolean)));
                 },
                 Op::Sub => {
-                    return Ok((e.clone(), check_if_same_type(e.clone(), env, e_type.1, MyType::Int32)));
+                    let start = (op.clone().0).offset;
+                    return Ok((e.clone(), check_if_same_type(e.clone(), start, env, e_type.1, MyType::Int32)));
                 },
                 _ => panic!("typecheck_unop"),
             };
@@ -88,22 +90,23 @@ fn typecheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
 fn typecheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     match (e.1).clone() {
         Expr::BinOp(le, op, re) => {
-            let le_type = typecheck_expr(*le, env)?.1;
+            let le_type = typecheck_expr(*le.clone(), env)?.1;
             let re_type = typecheck_expr(*re, env)?.1;
+            let start = (le.clone().0).offset;
             match op.1 {
-            Op::Add => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32))),
-            Op::Sub => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32))),
-            Op::Div => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32))),
-            Op::Multi => Ok((e.clone(), check_if_same_type_and_type(e, env, le_type, re_type, MyType::Int32))),
-            Op::Mod => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32))),
-            Op::And => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Boolean))),
-            Op::Or => Ok((e.clone(), check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Boolean))),
-            Op::NotEq => {check_if_same_type(e.clone(), env, le_type, re_type); return Ok((e, MyType::Boolean))},
-            Op::Equal => {check_if_same_type(e.clone(), env, le_type, re_type); return Ok((e, MyType::Boolean))},
-            Op::LessEqThen => {check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
-            Op::LargEqThen => {check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
-            Op::LessThen => {check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
-            Op::LargThen => {check_if_same_type_and_type(e.clone(), env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
+            Op::Add => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32))),
+            Op::Sub => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32))),
+            Op::Div => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32))),
+            Op::Multi => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32))),
+            Op::Mod => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32))),
+            Op::And => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Boolean))),
+            Op::Or => Ok((e.clone(), check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Boolean))),
+            Op::NotEq => {check_if_same_type(e.clone(), start, env, le_type, re_type); return Ok((e, MyType::Boolean))},
+            Op::Equal => {check_if_same_type(e.clone(), start, env, le_type, re_type); return Ok((e, MyType::Boolean))},
+            Op::LessEqThen => {check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
+            Op::LargEqThen => {check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
+            Op::LessThen => {check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
+            Op::LargThen => {check_if_same_type_and_type(e.clone(), start, env, le_type, re_type, MyType::Int32); return Ok((e, MyType::Boolean))},
                 _ => panic!("typecheck_binop"),
             }
         },
@@ -121,7 +124,7 @@ fn typecheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr
             let vt = typecheck_expr(*v, env)?.1;
             let ident;
             let ty;
-            match (*i).1 {
+            match (*i.clone()).1 {
                 Expr::VarWithType(var, typ) => {
                     ty = typ;
                     match (*var).1 {
@@ -159,9 +162,13 @@ fn typecheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr
             let tr = env.store_var(ident, t.clone().1);
             match tr {
                 Ok(_) => (),
-                Err(_) => env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: e.clone(),}),
+                Err(_) => {
+                    let start = (i.clone().0).offset - 3;
+                    env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: e.clone(), start: start,});
+                },
             };
-            return Ok((e.clone(), check_if_same_type(e.clone(), env, t.1, vt)));
+            let start = (i.clone().0).offset - 3;
+            return Ok((e.clone(), check_if_same_type(e.clone(), start, env, t.1, vt)));
         },
         _ => panic!("typecheck_let"),
     }
@@ -177,7 +184,7 @@ fn typecheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
             let vt = typecheck_expr(*v, env)?.1;
             let ident;
 
-            match (*var).1 {
+            match (*var.clone()).1 {
                 Expr::Var(i) => ident = i,
                 Expr::Prefixed(_, va) => {
                     match (*va).1 {
@@ -189,7 +196,8 @@ fn typecheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
             };
 
             let t = env.load_var(ident).unwrap();
-            return Ok((e.clone(), check_if_same_type(e.clone(), env, t, vt)));
+            let start = (var.clone().0).offset;
+            return Ok((e.clone(), check_if_same_type(e.clone(), start, env, t, vt)));
         },
         _ => panic!("typecheck_assign"),
     }
@@ -255,8 +263,9 @@ fn typecheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
 fn typecheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     match (e.1).clone() {
         Expr::If(i, ib, eb) => {
-            if !check_if_bool(typecheck_expr(*i, env)?.1) {
-                env.add_errormessage(ErrorMessage{message: "Type missmatch, if needs to be of type bool".to_string(), context: e.clone(),})
+            if !check_if_bool(typecheck_expr(*i.clone(), env)?.1) {
+                let start = (i.clone().0).offset - 2;
+                env.add_errormessage(ErrorMessage{message: "Type missmatch, if needs to be of type bool".to_string(), context: e.clone(), start: start,})
             } 
 
             env.crate_scope();
@@ -268,7 +277,10 @@ fn typecheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<
             match ib_res.clone()?.1 {
                 MyType::ReturnType(ibt) => {
                     match eb_res?.1 {
-                        MyType::ReturnType(ebt) => return Ok((e.clone(), MyType::ReturnType(Box::new(check_if_same_type(e.clone(), env, *ibt, *ebt))))),
+                        MyType::ReturnType(ebt) => {
+                            let start = (i.clone().0).offset - 2;
+                            return Ok((e.clone(), MyType::ReturnType(Box::new(check_if_same_type(e.clone(), start, env, *ibt, *ebt)))));
+                        },
                         _ => return ib_res,
                     };
                 },
@@ -291,8 +303,9 @@ fn typecheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<
 fn typecheck_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     match (e.1).clone() {
         Expr::While(i, b) => {
-            if !check_if_bool(typecheck_expr(*i, env)?.1) {
-                env.add_errormessage(ErrorMessage{message: "Type missmatch, while needs to be of type bool".to_string(), context: e,})
+            if !check_if_bool(typecheck_expr(*i.clone(), env)?.1) {
+                let start = (i.clone().0).offset - 5;
+                env.add_errormessage(ErrorMessage{message: "Type missmatch, while needs to be of type bool".to_string(), context: e, start: start,})
             }
             env.crate_scope();
             let res = typecheck_body(*b, env);
@@ -356,7 +369,10 @@ fn add_func_to_typechecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IRes
             let tr = env.store_func(id, t_param, rt.clone().1, e.clone().1);
             match tr {
                 Ok(_) => (),
-                Err(_) => env.add_errormessage(ErrorMessage{message: "Func already declared".to_string(), context: e.clone(),}),
+                Err(_) => {
+                    let start = (ident.0).offset - 3;
+                    env.add_errormessage(ErrorMessage{message: "Func already declared".to_string(), context: e.clone(), start: start,});
+                },
             };
             return Ok((e, rt.1));
         },
@@ -384,13 +400,18 @@ fn typecheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Sp
                 _ => panic!("typecheck_func_call"),
             };
             if param_t.len() != param.len() {
-                env.add_errormessage(ErrorMessage{message: "Parameters are not equal length".to_string(), context: e.clone(),})
+                let start = (var.0).offset;
+                env.add_errormessage(ErrorMessage{message: "Parameters are not of equal length".to_string(), context: e.clone(), start: start})
             }
             let mut i = 0;
             for t in param_t {
                 let tcheck_p = typecheck_expr(param[i].clone(), env)?.1;
-                check_if_same_type(e.clone(), env, t, tcheck_p);
+                let start = (var.clone().0).offset;
+                check_if_same_type(e.clone(), start, env, t, tcheck_p);
                 i = i + 1;
+                if i >= param.len() {
+                    break;
+                }
             }
             return Ok((e, return_t));
         },
@@ -430,7 +451,7 @@ fn typecheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult
             _ => panic!("typecheck_funcs_in_list"),
         }
         match e.clone() {
-            Expr::Func(_ident, param, return_type, body) => {
+            Expr::Func(identt, param, return_type, body) => {
                 env.crate_scope();
                 for v in param {
                     match v.1 {
@@ -454,7 +475,10 @@ fn typecheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult
                             let tr = env.store_var(ident, typ.clone().1);
                             match tr {
                                 Ok(_) => (),
-                                Err(_) => env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: expr.clone(),}),
+                                Err(_) => {
+                                    let start = (identt.clone().0).offset - 3;
+                                    env.add_errormessage(ErrorMessage{message: "Var already declared".to_string(), context: expr.clone(), start: start,});
+                                },
                             };
                         }
                         _ => panic!("typecheck_funcs_in_list"),
@@ -476,7 +500,8 @@ fn typecheck_funcs_in_list<'a>(expr: SpanExpr<'a>, env: &mut Env<'a>) -> IResult
                     },
                     _ => panic!("typecheck_funcs_in_list"),
                 };
-                res = check_if_same_type(expr.clone(), env, rt, body_t);
+                let start = (identt.clone().0).offset - 3;
+                res = check_if_same_type(expr.clone(), start, env, rt, body_t);
             },
             _ => panic!("typecheck_funcs_in_list"),
         }
@@ -521,7 +546,7 @@ fn check_if_notype(t: MyType) -> bool {
 }
 
 
-fn check_if_same_type<'a>(e: SpanExpr<'a>, env: &mut Env<'a>, lt: MyType, rt: MyType) -> MyType {
+fn check_if_same_type<'a>(e: SpanExpr<'a>, start: usize, env: &mut Env<'a>, lt: MyType, rt: MyType) -> MyType {
     if check_if_bool(lt.clone()) && check_if_bool(rt.clone()) {
         return MyType::Boolean;
     } else if check_if_num(lt.clone()) && check_if_num(rt.clone()) {
@@ -529,32 +554,30 @@ fn check_if_same_type<'a>(e: SpanExpr<'a>, env: &mut Env<'a>, lt: MyType, rt: My
     } else if check_if_notype(lt.clone()) && check_if_notype(rt.clone()) {
         return MyType::Int32;
     }
-    env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e,});
+    env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e, start: start});
     return lt;
 }
 
 
-fn check_if_same_type_and_type<'a>(e: SpanExpr<'a>, env: &mut Env<'a>, lt: MyType, rt: MyType, wanted: MyType) -> MyType {
+fn check_if_same_type_and_type<'a>(e: SpanExpr<'a>, start: usize, env: &mut Env<'a>, lt: MyType, rt: MyType, wanted: MyType) -> MyType {
     match wanted {
         MyType::Int32 => {
             if check_if_num(lt.clone()) {
-                return check_if_same_type(e, env, lt,rt);
+                return check_if_same_type(e, start, env, lt,rt);
             }
-            env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e,});
         },
         MyType::Boolean => {
             if check_if_bool(lt.clone()) {
-                return check_if_same_type(e, env, lt,rt);
+                return check_if_same_type(e, start, env, lt,rt);
             }
-            env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e,});
         },
         MyType::NoType => {
             if check_if_notype(lt.clone()) {
-                return check_if_same_type(e, env, lt,rt);
+                return check_if_same_type(e, start, env, lt,rt);
             }
-            env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e,});
         },
         MyType::ReturnType(_) => panic!("ReturnType not implemented check_if_same_type_and_type"),
-    }
+    };
+    env.add_errormessage(ErrorMessage{message: "Type missmatch".to_string(), context: e, start: start,});
     return wanted;
 }

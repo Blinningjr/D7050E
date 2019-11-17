@@ -8,4 +8,5 @@ use crate::parser::{
 pub struct ErrorMessage<'a> {
     pub message: String,
     pub context: SpanExpr<'a>,
+    pub start: usize,
 }

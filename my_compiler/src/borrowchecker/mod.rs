@@ -687,17 +687,17 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
             let ident;
             match (*i).1 {
                 Expr::Var(id) => ident = id,
-                _ => panic!("borrowcheck_func_call"),
+                _ => panic!("borrowcheck_func_call 1"),
             };
             let temp = env.load_func(ident);
             let param_p;
             let return_p;
             match temp {
                 Ok(tup) => {param_p = tup.0; return_p = tup.1;},
-                _ => panic!("borrowcheck_func_call"),
+                _ => panic!("borrowcheck_func_call 2"),
             };
             if param_p.len() != param.len() {
-                panic!("borrowcheck_func_call");
+                panic!("borrowcheck_func_call 3");
             }
             let mut i = 0;
             let mut res = BorrowInfo::Value(ValueInfo {
@@ -726,7 +726,7 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
             }
             return Ok((e, res));
         },
-        _ => panic!("borrowcheck_func_call"),
+        _ => panic!("borrowcheck_func_call 0"),
     }
 }
 

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 extern crate nom;
+pub use nom::{Slice, FindSubstring};
 
 pub mod op;
 use op::Op;
@@ -17,7 +18,7 @@ use expr::Expr;
 /**
  *  nom imports.
  */
-use nom::{
+pub use nom::{
     branch::alt,
     combinator::{map, opt},
     character::complete::{ digit1, alpha1, multispace0, multispace1},
@@ -27,6 +28,7 @@ use nom::{
     multi::separated_list,
     error,
     Err,
+    error::ParseError,
 };
 
 

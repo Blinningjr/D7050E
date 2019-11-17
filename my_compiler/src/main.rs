@@ -21,8 +21,8 @@ pub use crate::borrowchecker::borrowcheck_ast;
 
 
 fn main() {
-    // let contents = fs::read_to_string("src/test_code.rs")
-    //     .expect("Something went wrong reading the file");
+    let contents = fs::read_to_string("src/test_code.rs")
+        .expect("Something went wrong reading the file");
     // println!("{}", contents);
 
     // let f = parse("{
@@ -32,22 +32,7 @@ fn main() {
     //     **c = false; 
     //     return a;
     //     }");
-    let f = typecheck_ast(parse("
-        fn tio(i: &i32) -> bool {
-            if i < 50 {
-                return tio(&(i + 1));
-            } 
-            else{
-                return i;       
-            }
-        }
-
-        fn main() {
-            let a: i32 = 2; 
-            let a: i32 = 2; 
-            tio(&a, 1);
-        }
-        ").unwrap().1);
+    let f = typecheck_ast(parse(&contents).unwrap().1);
     // let f = parse(contents.as_str());
     // println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.

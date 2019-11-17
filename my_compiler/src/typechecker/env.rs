@@ -8,6 +8,11 @@ use crate::parser::mytype::MyType;
 
 pub use super::ErrorMessage;
 
+use crate::parser::{Slice, FindSubstring, alpha1, preceded, multispace0, map, Span};
+use core::ops::RangeTo;
+use core::ops::Range;
+use core::ops::RangeFrom;
+
 /** 
  *  Defines Scope. 
  *  Scope stores the variables and functions declarde in scope. 
@@ -220,10 +225,16 @@ impl<'a> Env<'a> {
     pub fn print_errormessages(&mut self) -> () {
         let ems = self.ems.clone();
         for em in ems {
+            let span = em.context.0;
+            let mut fragment = span.fragment;
+            fragment = fragment.slice(RangeFrom{start: em.start - span.offset});
+            let i = fragment.find_substring("\n").unwrap() + 1;
+            fragment = fragment.slice(RangeTo{end: i - 1});
             println!(
                 "Error: {:?} \n 
-                {:?} \n", 
-                em.message, em.context.0);
+                {:#?} \n
+                Line: {:?} \n", 
+                em.message, fragment, span.line);
         }
     }
 }
