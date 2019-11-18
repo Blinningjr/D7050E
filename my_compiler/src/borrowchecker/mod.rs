@@ -816,7 +816,7 @@ fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
         }
 
         match e.clone() {
-            Expr::Func(ident, param, t, body) => {
+            Expr::Func(_ident, param, t, body) => {
                 env.crate_scope();
                 let typ = borrowcheck_expr(*t, env).unwrap().1;
                 let pt;
