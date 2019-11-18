@@ -1,27 +1,17 @@
-fn tio(i: i32, i: bool) -> bool {
-    if i < 50 {
-        return tio(i + false);
+fn tio(i: i32) -> i32 {
+    if mut (i < 50) {
+        return tio(i + *1);
     } 
     else{
-        return i;       
+        return mut i;       
     }
 }
 
 fn main() {
-    let mut a: i32 = 2; 
-    if a+1 {
-        a = a + 1;
-    }
-    a = a + 2;
-    tio(2);
-    let mut a: i32 = 2; 
-}
+    let mut a: i32 = mut 2; 
+    tio(&2, - &mut 3);
 
-fn tio(i: i32, i: bool) -> bool {
-    if i < 50 {
-        return tio(i + 1);
-    } 
-    else{
-        return i;       
+    while mut true {
+        
     }
 }

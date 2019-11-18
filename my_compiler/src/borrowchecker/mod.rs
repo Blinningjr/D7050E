@@ -24,6 +24,11 @@ use crate::parser::{
 pub mod enverror;
 // use enverror::{Result, EnvError};
 
+#[path = "../typechecker/errormessage.rs"]
+pub mod errormessage;
+pub use errormessage::ErrorMessage;
+
+
 pub mod env;
 pub use env::Env;
 
@@ -33,7 +38,9 @@ pub use env::Env;
 pub fn borrowcheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     let mut env = Env::new();
     env.crate_scope();
-    borrowcheck_expr(e, &mut env)
+    let res = borrowcheck_expr(e, &mut env);
+    env.print_errormessages();
+    return res;
 }
 
 
@@ -137,7 +144,7 @@ fn borrowcheck_bool<'a>(e: SpanExpr<'a>, _env: &mut Env<'a>) -> IResult<'a, Span
 */
 fn borrowcheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match (e.1).clone() {
-        Expr::UnOp(_, expr) => {
+        Expr::UnOp(op, expr) => {
             let val = borrowcheck_expr(*expr, env)?.1;
             let p;
             match val.clone() {
@@ -149,7 +156,10 @@ fn borrowcheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
                 },
             };
             match p {
-                Prefix::BorrowMut => panic!("borrowcheck_unop"),
+                Prefix::BorrowMut => {
+                    let start = ((op.clone()).0).offset; 
+                    env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                },
                 _ => (),
             };
 
@@ -166,7 +176,7 @@ fn borrowcheck_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
 fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match (e.1).clone() {
         Expr::BinOp(le, op, re) => {
-            let lp = borrowcheck_expr(*le, env)?.1;
+            let lp = borrowcheck_expr(*le.clone(), env)?.1;
             let rp = borrowcheck_expr(*re, env)?.1;
             match op.1 {
                 Op::Equal => (),
@@ -178,7 +188,10 @@ fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
                         BorrowInfo::Var(v, _, _) => p1 = v.prefix,
                     };
                     match p1 {
-                        Prefix::BorrowMut => panic!("borrowcheck_binop"),
+                        Prefix::BorrowMut => {
+                            let start = ((*le.clone()).0).offset; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
                         _ => (),
                     };
                     let p2; 
@@ -187,7 +200,10 @@ fn borrowcheck_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Span
                         BorrowInfo::Var(v, _, _) => p2 = v.prefix,
                     };
                     match p2 {
-                        Prefix::BorrowMut => panic!("borrowcheck_binop"),
+                        Prefix::BorrowMut => {
+                            let start = ((*le.clone()).0).offset; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
                         _ => (),
                     };
                 },
@@ -272,7 +288,7 @@ fn borrowcheck_var_with_type<'a>(e: SpanExpr<'a>, _env: &mut Env<'a>) -> IResult
 fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match (e.1).clone() {
         Expr::Let(var, value) => {
-            let mut var_res = borrowcheck_expr(*var, env)?.1;
+            let mut var_res = borrowcheck_expr(*var.clone(), env)?.1;
             let value_res = borrowcheck_expr(*value, env)?.1;
             let mut pointer;
 
@@ -337,7 +353,8 @@ fn borrowcheck_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanEx
             };
 
             if p1 != p2 {
-                panic!("borrowcheck_let {:?} != {:?}", p1, p2);
+                let start = ((*var.clone()).0).offset - 3; 
+                env.add_errormessage(ErrorMessage{message: "Missmatch borrow type".to_string(), context: e.clone(), start: start,});
             }
 
             let store = env.store_var(var_res.clone());
@@ -428,13 +445,15 @@ fn borrowcheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Spa
             };
 
             if p_var != p_val {
-                panic!("borrowcheck_assign 3 {:?} {:?}", p_var, p_val);
+                let start = ((*variable.clone()).0).offset; 
+                env.add_errormessage(ErrorMessage{message: "Missmatch borrow type".to_string(), context: e.clone(), start: start,});;
             }
 
             if mutable {
                 env.assign_var(scope, mem_pos, val.1);
             } else {
-                panic!("borrowcheck_assign {:?}", mutable);
+                let start = ((*variable.clone()).0).offset; 
+                env.add_errormessage(ErrorMessage{message: "Value is no mutable".to_string(), context: e.clone(), start: start,});
             }
 
             let res = env.load_var(ident, 0).unwrap().0;
@@ -544,12 +563,18 @@ fn borrowcheck_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanE
 fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match (e.1).clone() {
         Expr::If(b, ib, eb) => {
-            let val = borrowcheck_expr(*b, env)?;
+            let val = borrowcheck_expr(*b.clone(), env)?;
             match val.clone().1 {
                 BorrowInfo::Value(v, _, _) => {
                     match v.prefix {
-                        Prefix::DeRef(_) => panic!("borrowcheck_if 1"),
-                        Prefix::Mut => panic!("borrowcheck_if 2"),
+                        Prefix::DeRef(_) => {
+                            let start = ((*b.clone()).0).offset - 2; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
+                        Prefix::Mut => {
+                            let start = ((*b.clone()).0).offset - 2; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
                         _ => (),
                     };
                 },
@@ -590,7 +615,9 @@ fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
             if b_ib {
                 if b_eb {
                     if p_ib != p_eb {
-                        panic!("borrowcheck_if {:?} {:?}", p_ib, p_eb);
+                        let start = ((*b.clone()).0).offset - 2; 
+                        env.add_errormessage(ErrorMessage{message: "Return borrow type of the bodys are no matching".to_string(), context: e.clone(), start: start,});
+                        // panic!("borrowcheck_if {:?} {:?}", p_ib, p_eb);
                     }
                 } 
             }
@@ -608,19 +635,31 @@ fn borrowcheck_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExp
 fn borrowcheck_while<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
     match (e.1).clone() {
         Expr::While(b, body)=> {
-            let val = borrowcheck_expr(*b, env)?;
+            let val = borrowcheck_expr(*b.clone(), env)?;
             match val.1 {
                 BorrowInfo::Value(v, _, _) => {
                     match v.prefix {
-                        Prefix::DeRef(_) => panic!("borrowcheck_while"),
-                        Prefix::Mut => panic!("borrowcheck_while"),
+                        Prefix::DeRef(_) => {
+                            let start = ((*b.clone()).0).offset - 5; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
+                        Prefix::Mut => {
+                            let start = ((*b.clone()).0).offset - 5; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
                         _ => (),
                     };
                 },
                 BorrowInfo::Var(v, _, _) => {
                     match v.prefix {
-                        Prefix::DeRef(_) => panic!("borrowcheck_while"),
-                        Prefix::Mut => panic!("borrowcheck_while"),
+                        Prefix::DeRef(_) => {
+                            let start = ((*b.clone()).0).offset - 5; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
+                        Prefix::Mut => {
+                            let start = ((*b.clone()).0).offset - 5; 
+                            env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                        },
                         _ => (),
                     };
                 },
@@ -651,7 +690,10 @@ fn add_func_to_borrowchecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IR
                         t_param.push(v.prefix.clone());
                         t_var.push((v.ident, v.prefix.clone()));
                     },
-                    BorrowInfo::Value(_, _, _) => panic!("add_func_to_borrowchecking_list"),
+                    BorrowInfo::Value(_, _, _) => {
+                        let start = ((*var.clone()).0).offset - 2; 
+                        env.add_errormessage(ErrorMessage{message: "Borrowchecker error".to_string(), context: e.clone(), start: start,});
+                    },
                 };
             }
             let ident;
@@ -697,9 +739,10 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
                 _ => panic!("borrowcheck_func_call 2"),
             };
             if param_p.len() != param.len() {
-                panic!("borrowcheck_func_call 3");
+                let start = ((*i.clone()).0).offset; 
+                env.add_errormessage(ErrorMessage{message: "Missmatch number of function parameters".to_string(), context: e.clone(), start: start,});
             }
-            let mut i = 0;
+            let mut j = 0;
             let res = BorrowInfo::Value(ValueInfo {
                 mutable: false, 
                 prefix: return_p, 
@@ -712,7 +755,7 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
             }, false, false);
             for p in param_p {
                 let p1;
-                let res1 = borrowcheck_expr(param[i].clone(), env)?.1;
+                let res1 = borrowcheck_expr(param[j].clone(), env)?.1;
                 
                 match res1.clone() {
                     BorrowInfo::Value(v, _, _) => p1 = v.prefix,
@@ -720,9 +763,11 @@ fn borrowcheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, 
                 };
 
                 if p != p1 {
-                    panic!("borrowcheck_func_call {:?} != {:?}", p, p1);
+                    let start = ((*i.clone()).0).offset; 
+                    env.add_errormessage(ErrorMessage{message: "missmatch borrow type".to_string(), context: e.clone(), start: start,});
+                    // panic!("borrowcheck_func_call {:?} != {:?}", p, p1);
                 }
-                i = i + 1;
+                j = j + 1;
             }
             return Ok((e, res));
         },
@@ -771,7 +816,7 @@ fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
         }
 
         match e.clone() {
-            Expr::Func(_ident, param, t, body) => {
+            Expr::Func(ident, param, t, body) => {
                 env.crate_scope();
                 let typ = borrowcheck_expr(*t, env).unwrap().1;
                 let pt;
@@ -846,7 +891,9 @@ fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                     },
                 };
                 if pt != pb {
-                    panic!("borrowcheck_funcs_in_list {:?} != {:?}", pt, pb);
+                    panic!("borrowcheck_funcs_in_list");
+                    // let start = (ident.clone().0).offset - 2; // TODO
+                    // env.add_errormessage(ErrorMessage{message: "Value can't be declared mut".to_string(), context: e.clone(), start: start,});
                 }
 
             },
@@ -867,7 +914,10 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
             match val.clone() {
                 BorrowInfo::Value(mut v, _, _) => {
                     match p.clone().1 {
-                        Prefix::DeRef(_) => panic!("borrowcheck_prefixed"),
+                        Prefix::DeRef(_) => {
+                            let start = (p.clone().0).offset;
+                            env.add_errormessage(ErrorMessage{message: "Value can't be derefrenced".to_string(), context: e.clone(), start: start,});
+                        },
                         Prefix::Borrow => {
                             let pointer = env.store_var(val.clone());
                             env.add_borrow(pointer.0, pointer.1);
@@ -885,7 +935,10 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                             v.mem_pos = pointer.1;
                             val = BorrowInfo::Value(v, false, false);
                         },
-                        Prefix::Mut => panic!("borrowcheck_prefixed"),
+                        Prefix::Mut => {
+                            let start = (p.clone().0).offset;
+                            env.add_errormessage(ErrorMessage{message: "Value can't be declared mut".to_string(), context: e.clone(), start: start,});
+                        },
                         Prefix::None => (),
                     };
                 },

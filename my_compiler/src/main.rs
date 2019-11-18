@@ -40,7 +40,7 @@ fn main() {
     //     tio(2);
     // }
     // ").unwrap().1);
-    let f = typecheck_ast(parse(&contents).unwrap().1);
+    let f = borrowcheck_ast(parse(&contents).unwrap().1);
     // let f = parse(contents.as_str());
     // println!("Output = {:#?}" , f); // print parsed ast.
     // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
