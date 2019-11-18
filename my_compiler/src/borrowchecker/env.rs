@@ -6,6 +6,12 @@ use super::enverror::{EnvError, Result};
 use crate::parser::expr::Expr;
 use crate::parser::varprefix::Prefix;
 
+pub use super::ErrorMessage;
+
+use crate::parser::{Slice, FindSubstring};
+use core::ops::RangeTo;
+use core::ops::RangeFrom;
+
 use super::{
     // ValueInfo,
     // VarInfo,
@@ -128,6 +134,7 @@ impl<'a> Scope<'a> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Env<'a> {
     scopes: Vec<Scope<'a>>,
+    ems: Vec<ErrorMessage<'a>>,
     scope_pos: i32,
 }
 
@@ -140,6 +147,7 @@ impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         Env {
             scopes: Vec::new(),
+            ems: Vec::new(),
             scope_pos: -1,
         }
     }
@@ -411,5 +419,25 @@ impl<'a> Env<'a> {
                 return self.load_var(&v.ident, numderef);
             },
         };
+    }
+
+    pub fn add_errormessage(&mut self, em: ErrorMessage<'a>) -> () {
+        self.ems.push(em);
+    }
+
+    pub fn print_errormessages(&mut self) -> () {
+        let ems = self.ems.clone();
+        for em in ems {
+            let span = em.context.0;
+            let mut fragment = span.fragment;
+            fragment = fragment.slice(RangeFrom{start: em.start - span.offset});
+            let i = fragment.find_substring("\n").unwrap() + 1;
+            fragment = fragment.slice(RangeTo{end: i - 1});
+            println!(
+                "Error: {:?} \n 
+                {:#?} \n
+                Line: {:?} \n", 
+                em.message, fragment, span.line);
+        }
     }
 }
