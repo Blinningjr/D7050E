@@ -38,7 +38,7 @@ pub use env::Env;
 pub fn borrowcheck_ast<'a>(e: SpanExpr<'a>) -> bool {
     let mut env = Env::new();
     env.crate_scope();
-    let res = borrowcheck_expr(e, &mut env);
+    let _res = borrowcheck_expr(e, &mut env);
     
     return env.print_errormessages();
 }

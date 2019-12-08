@@ -3,7 +3,6 @@
 use std::collections::HashMap;
 
 use super::enverror::{EnvError, Result};
-use crate::parser::expr::Expr;
 use crate::parser::varprefix::Prefix;
 
 pub use super::ErrorMessage;

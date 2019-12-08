@@ -30,7 +30,7 @@ pub use errormessage::ErrorMessage;
 pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> bool {
     let mut env = Env::new();
     env.crate_scope();
-    let res = typecheck_expr(e, &mut env);
+    let _res = typecheck_expr(e, &mut env);
     
     return env.print_errormessages();
 }
