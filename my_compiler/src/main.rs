@@ -4,6 +4,7 @@
  * Required for reading files.
  */
 use std::fs;
+use std::env;
 
 #[path = "parser/mod.rs"]
 mod parser;
@@ -15,56 +16,58 @@ mod typechecker;
 mod borrowchecker;
 
 pub use crate::parser::parse;
-pub use crate::interpreter::interp_ast;
+pub use crate::interpreter::{interp_ast, Val};
 pub use crate::typechecker::typecheck_ast;
 pub use crate::borrowchecker::borrowcheck_ast;
 
 
 fn main() {
-    let contents = fs::read_to_string("src/test_code.rs")
+    let args: Vec<String> = env::args().collect();
+
+    let mut filename = "";
+    let mut typecheck = true;
+    let mut borrowcheck = true;
+    for i in 1..args.len() {
+        if args[i] == "t" {
+            typecheck = false;
+        } else if args[i] == "b" {
+            borrowcheck = false;
+        } else {
+            filename = &args[i];
+        }
+    }
+
+
+    let contents = fs::read_to_string(filename)
         .expect("Something went wrong reading the file");
-    // println!("{}", contents);
 
-    // let f = interp_ast(parse( "  
-    // fn tio(i: i32) -> i32 {
-    //     if i < 50 {
-    //         return tio(i + 1);
-    //     } 
-    //     else{
-    //         return i;       
-    //     }
-    // }
-
-    // fn main() {
-    //     let a: i32 = 2; 
-    //     tio(2);
-    // }
-    // ").unwrap().1);
-    let f = borrowcheck_ast(parse(&contents).unwrap().1);
-    // let f = parse(contents.as_str());
-    // println!("Output = {:#?}" , f); // print parsed ast.
-    // println!("{:#?}", interp_ast(f.unwrap().1)); // Print interp and env.
-    // interp_ast(f.unwrap().1);
-    // let mut a = 10;
-    // let b = &mut a;
-    // *b = 1 ;
+    let parsed = parse(&contents).unwrap();
     
-    // mut and borrow tests.
-    // let mut a: i32 = 10; a = a + 2; // funka
-    // let mut a: bool = true; a =!a; // funka 
-    // let a: i32 = 10; a = a + 2; // funka inte
-    // let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; //c //funka
-    // let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; //funka 
-    // let mut a: bool = true; let b: &bool = &a; // funka
-    // let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; **c = false; // funka
-    // let mut a: bool = true; let mut b: &mut bool = &mut a; let c = &mut b; &**c = &false; // funka inte
-    // let a = 10; let b = &a; let c = b +10; //funka
-    // print!("\n {:?} \n", c);
+    if typecheck {
+        if typecheck_ast(parsed.1.clone()) {
+            return;
+        }
+        
+    }
 
-    // let a = &mut 10; *a = 20; // funkar
-    // let mut b = &mut a;
-    // let mut c = &mut a;
-    // let v = &mut a + &mut b;
-
-    // print!("\n {:?} \n", a);
+    if borrowcheck {
+        if borrowcheck_ast(parsed.1.clone()) {
+            return;
+        }
+    }
+    let result = interp_ast(parsed.1).unwrap().1;
+    match result {
+        Val::ReturnBool(b) => println!("{:?}", b),
+        Val::ReturnNum(n) => println!("{:?}", n),
+        Val::Bool(b) => println!("{:?}", b),
+        Val::Num(n) => println!("{:?}", n),
+        Val::BorrowPrimitive(_, v) => {
+            match *v {
+                Val::Bool(b) => println!("{:?}", b),
+                Val::Num(n) => println!("{:?}", n),
+                _ =>  return,
+            }
+        },
+        _ => return,
+    }
 }

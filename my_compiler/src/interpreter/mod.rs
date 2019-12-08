@@ -345,7 +345,7 @@ fn interp_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
 fn interp_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
     match (e.1).clone() {
         Expr::Body(es) => {
-            let mut res = Ok((e, Val::Empty));
+            let mut res = Ok((e.clone(), Val::Empty));
             for e in es {
                 match e.1 {
                     Expr::Return(v) => {
@@ -358,7 +358,7 @@ fn interp_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                         };
                     },
                     _ => {
-                        res = interp_expr(e, env);
+                        res = interp_expr(e.clone(), env);
                         match res.clone()?.1 {
                             Val::ReturnBool(_) => return res,
                             Val::ReturnNum(_) => return res,
@@ -368,7 +368,7 @@ fn interp_body<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     },
                 }
             }
-            return res;
+            return Ok((e, Val::Empty));
         },
         _ => panic!("interp_body"),
     }

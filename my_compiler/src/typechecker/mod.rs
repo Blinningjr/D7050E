@@ -27,12 +27,12 @@ pub use errormessage::ErrorMessage;
 /** 
  *  Typecheck ast.
 */
-pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
+pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> bool {
     let mut env = Env::new();
     env.crate_scope();
     let res = typecheck_expr(e, &mut env);
-    env.print_errormessages();
-    return res;
+    
+    return env.print_errormessages();
 }
 
 

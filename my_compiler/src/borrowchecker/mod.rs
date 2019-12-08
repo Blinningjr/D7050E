@@ -35,12 +35,12 @@ pub use env::Env;
 /** 
  *  Borrowcheckast.
 */
-pub fn borrowcheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, BorrowInfo> {
+pub fn borrowcheck_ast<'a>(e: SpanExpr<'a>) -> bool {
     let mut env = Env::new();
     env.crate_scope();
     let res = borrowcheck_expr(e, &mut env);
-    env.print_errormessages();
-    return res;
+    
+    return env.print_errormessages();
 }
 
 
@@ -703,7 +703,7 @@ fn add_func_to_borrowchecking_list<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IR
                 },
                 _ => panic!("add_func_to_borrowchecking_list"),
             };
-            env.store_func(&ident, t_param, Prefix::None, e.clone().1);
+            env.store_func(&ident, t_param, Prefix::None, e.clone());
             return Ok((e, BorrowInfo::Value(ValueInfo {
                 mutable: false, 
                 prefix: Prefix::None, 
@@ -815,8 +815,8 @@ fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
             _ => panic!("borrowcheck_funcs_in_list"),
         }
 
-        match e.clone() {
-            Expr::Func(_ident, param, t, body) => {
+        match e.clone().1 {
+            Expr::Func(ident, param, t, body) => {
                 env.crate_scope();
                 let typ = borrowcheck_expr(*t, env).unwrap().1;
                 let pt;
@@ -891,9 +891,8 @@ fn borrowcheck_funcs_in_list<'a>(_expr: SpanExpr<'a>, env: &mut Env<'a>) -> () {
                     },
                 };
                 if pt != pb {
-                    panic!("borrowcheck_funcs_in_list");
-                    // let start = (ident.clone().0).offset - 2; // TODO
-                    // env.add_errormessage(ErrorMessage{message: "Value can't be declared mut".to_string(), context: e.clone(), start: start,});
+                    let start = (ident.clone().0).offset - 2;
+                    env.add_errormessage(ErrorMessage{message: "Returned value has not the same borrow prefix".to_string(), context: e.clone(), start: start,});
                 }
 
             },

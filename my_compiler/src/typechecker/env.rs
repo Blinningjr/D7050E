@@ -221,8 +221,11 @@ impl<'a> Env<'a> {
         self.ems.push(em);
     }
 
-    pub fn print_errormessages(&mut self) -> () {
+    pub fn print_errormessages(&mut self) -> bool {
         let ems = self.ems.clone();
+        if ems.clone().len() == 0 {
+            return false;
+        }
         for em in ems {
             let span = em.context.0;
             let mut fragment = span.fragment;
@@ -235,5 +238,6 @@ impl<'a> Env<'a> {
                 Line: {:?} \n", 
                 em.message, fragment, span.line);
         }
+        return true;
     }
 }

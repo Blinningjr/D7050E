@@ -458,7 +458,7 @@ fn parse_func_call(input: Span) -> IResult<Span, SpanExpr> {
                     tag("("),
                     separated_list(tag(","), parse_expr),
                     tag(")"),
-                    tag(";"), // TODO onödig?
+                    tag(";"), 
                 )),
             ),
             |(i, _, p, _, _)| (input, Expr::FuncCall(Box::new(i), p))

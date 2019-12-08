@@ -15,6 +15,7 @@ use core::ops::RangeFrom;
 use super::{
     // ValueInfo,
     // VarInfo,
+    SpanExpr,
     BorrowInfo,
 };
 
@@ -31,7 +32,7 @@ struct Scope<'a> {
     mem: Vec<BorrowInfo>,
 
     mem_func: HashMap<String, (Vec<Prefix>, Prefix)>,
-    mem_func_to_check: Vec<Expr<'a>>,
+    mem_func_to_check: Vec<SpanExpr<'a>>,
 
     prev: i32,
     
@@ -89,7 +90,7 @@ impl<'a> Scope<'a> {
     /**
      *  Stores function to scope.
      */
-    fn store_f(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: Expr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
+    fn store_f(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: SpanExpr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
         self.mem_func_to_check.push(expr);
         self.mem_func.insert(key.to_string(), (ts, t))
     }
@@ -101,7 +102,7 @@ impl<'a> Scope<'a> {
         self.prev
     }
 
-    fn get_f(&mut self) -> Option<Expr<'a>> {
+    fn get_f(&mut self) -> Option<SpanExpr<'a>> {
         self.mem_func_to_check.pop()
     }
 
@@ -208,7 +209,7 @@ impl<'a> Env<'a> {
      *  Panic!: If there already exists a function with the same name in the current scope 
      *  or one of it's previouse scopes.
      */
-    pub fn store_func(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: Expr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
+    pub fn store_func(&mut self, key: &'a str, ts: Vec<Prefix>, t: Prefix, expr: SpanExpr<'a>) -> Option<(Vec<Prefix>, Prefix)> {
         let res = self.load_func(key);
         match res {
             Ok(_) => panic!("store_func"),
@@ -285,7 +286,7 @@ impl<'a> Env<'a> {
         self.scopes[self.scope_pos as usize].get_fs_len()
     }
 
-    pub fn get_func(&mut self) -> Option<Expr<'a>> {
+    pub fn get_func(&mut self) -> Option<SpanExpr<'a>> {
         self.scopes[self.scope_pos as usize].get_f()
     }
 
@@ -425,8 +426,11 @@ impl<'a> Env<'a> {
         self.ems.push(em);
     }
 
-    pub fn print_errormessages(&mut self) -> () {
+    pub fn print_errormessages(&mut self) -> bool {
         let ems = self.ems.clone();
+        if ems.clone().len() == 0 {
+            return false;
+        }
         for em in ems {
             let span = em.context.0;
             let mut fragment = span.fragment;
@@ -439,5 +443,6 @@ impl<'a> Env<'a> {
                 Line: {:?} \n", 
                 em.message, fragment, span.line);
         }
+        return true;
     }
 }
