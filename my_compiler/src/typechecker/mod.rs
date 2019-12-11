@@ -27,12 +27,14 @@ pub use errormessage::ErrorMessage;
 /** 
  *  Typecheck ast.
 */
-pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> bool {
+pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     let mut env = Env::new();
     env.crate_scope();
-    let _res = typecheck_expr(e, &mut env);
+    let res = typecheck_expr(e, &mut env);
     
-    return env.print_errormessages();
+    env.print_errormessages();
+
+    return res;
 }
 
 
@@ -397,11 +399,15 @@ fn typecheck_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Sp
             let return_t;
             match temp {
                 Ok(tup) => {param_t = tup.0; return_t = tup.1;},
-                _ => panic!("typecheck_func_call"),
+                _ => {
+                    let start = (var.0).offset;
+                    env.add_errormessage(ErrorMessage{message: "No function with that name".to_string(), context: e.clone(), start: start});
+                    return Ok((e, MyType::NoType));
+                },
             };
             if param_t.len() != param.len() {
                 let start = (var.0).offset;
-                env.add_errormessage(ErrorMessage{message: "Parameters are not of equal length".to_string(), context: e.clone(), start: start})
+                env.add_errormessage(ErrorMessage{message: "Parameters are not of equal length".to_string(), context: e.clone(), start: start});
             }
             let mut i = 0;
             for t in param_t {

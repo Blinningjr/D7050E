@@ -172,12 +172,19 @@ impl<'a> Env<'a> {
     pub fn store_var(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<usize> {
         let res = self.load_var(key, 0);
         match res {
-            Ok(_) => panic!("store_var {:?} {:?}", key, val),
+            Ok(_) => panic!("store_var1 {:?} {:?}", key, val),
             Err(_) =>  {
                 let mut value = val.clone();
-                match val {
-                    Val::Ident(i, _) => value = Val::Borrow(match self.get_var_pos(&i) {Ok(ok) => ok, Err(_) => panic!("store_var"),}, 
-                        match self.get_var_scope(&i) {Ok(ok) => ok, Err(_) => panic!("store_var"),}),
+                match val.clone() {
+                    Val::Ident(i, _) => value = Val::Borrow(match self.get_var_pos(&i) {
+                            Ok(ok) => ok, 
+                            Err(_) => panic!("store_var2 {:?} {:?}", key, val),
+                        }, 
+                        match self.get_var_scope(&i) {
+                            Ok(ok) => ok, 
+                            Err(_) => panic!("store_var3 {:?} {:?}", key, val),
+                        }
+                    ),
                     Val::BorrowPrimitive(_, v) => value = Val::BorrowPrimitive(self.scope_pos, v),
                     _ => (),
                 }

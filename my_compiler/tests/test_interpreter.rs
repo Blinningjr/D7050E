@@ -137,13 +137,13 @@ fn test_interp_binop() {
  */
 #[test]
 fn test_interp_let_assign_var() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2; a}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2; return a;}")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; !a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; return !a;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(false));
 }
 
 
@@ -152,13 +152,13 @@ fn test_interp_let_assign_var() {
  */
 #[test]
 fn test_interp_if() {
-    let test1 = interp_ast(parse_expr(Span::new("if 1 < 10 {12} else {false}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("if 1 < 10 {return 12;} else {return false;}")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("if 1 > 10 {true} else {false}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("if 1 > 10 {return true;} else {return false;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(false));
 }
 
 
@@ -178,13 +178,13 @@ fn test_interp_if_panic() {
  */
 #[test]
 fn test_interp_while() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 0; while a < 10 {a = a +1;} a}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 0; while a < 10 {a = a +1;} return a;}")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(10));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(10));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; while a {a = false;} a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; while a {a = false;} return a;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(false));
 }
 
 
@@ -196,27 +196,27 @@ fn test_interp_func() {
     let test1 = interp_ast(parse_expr(Span::new(
         "   {
             fn tio(i: i32) -> i32 {
-                i
+                return i;
             }
-            tio(2)
+            return tio(2);
             }
         "
     )).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(2));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(2));
 
     let test2 = interp_ast(parse_expr(Span::new(
         "   {
             fn tio(i: i32) -> i32 {
                 return 10;
-                i
+                return i;
             }
-            tio(2)
+            return tio(2);
             }
         "
     )).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Num(10));
+    assert_eq!(test2.unwrap().1, Val::ReturnNum(10));
 }
 
 
@@ -235,12 +235,12 @@ fn test_interp_recursiv_func() {
                     return i;       
                 }
             }
-            tio(2)
+            return tio(2);
             }
         "
     )).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(50));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(50));
 }
 
 
@@ -260,14 +260,14 @@ fn test_interp_ast() {
             }
         }
 
-        fn main() {
+        fn main() -> i32 {
             let a: i32 = 2; 
-            tio(2);
+            return tio(2);
         }
         "
     ).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(50));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(50));
 }
 
 
@@ -276,13 +276,13 @@ fn test_interp_ast() {
  */
 #[test]
 fn test_interp_mut() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2;}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; a = a + 2; return a;}")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12));
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(12));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; a =!a; a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; a =!a; return a;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(false));
 }
 
 
@@ -303,15 +303,15 @@ fn test_interp_mut_panic1() {
  */
 #[test]
 fn test_interp_borrow() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; b }")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; return b;}")).unwrap().1);
     assert!(test1.is_ok());
     assert_eq!(test1.unwrap().1, Val::Borrow(0, 0));
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: &bool = &a; *b}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let b: &bool = &a; return *b;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(true));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(true));
 
-    let test3 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; c}")).unwrap().1);
+    let test3 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &i32 = &a; let c: &i32 = b; return c;}")).unwrap().1);
     assert_eq!(test3.unwrap().1, Val::Borrow(0, 0));
 }
 
@@ -321,13 +321,13 @@ fn test_interp_borrow() {
  */
 #[test]
 fn test_interp_borrow_mut() {
-    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; a}")).unwrap().1);
+    let test1 = interp_ast(parse_expr(Span::new("{let mut a: i32 = 10; let b: &mut i32 = &mut a; *b = 12; return a;}")).unwrap().1);
     assert!(test1.is_ok());
-    assert_eq!(test1.unwrap().1, Val::Num(12)); 
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(12)); 
 
-    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c: &mut bool = &mut b; **c = false; a}")).unwrap().1);
+    let test2 = interp_ast(parse_expr(Span::new("{let mut a: bool = true; let mut b: &mut bool = &mut a; let c: &mut bool = &mut b; **c = false; return a;}")).unwrap().1);
     assert!(test2.is_ok());
-    assert_eq!(test2.unwrap().1, Val::Bool(false));
+    assert_eq!(test2.unwrap().1, Val::ReturnBool(false));
 }
 
 /**
@@ -343,10 +343,10 @@ fn test_interp_func_borrow_mut() {
         }
         let mut a: i32 = 0;
         test(&mut a);
-        a
+        return a;
         }
         ")).unwrap().1);
-    assert_eq!(test1.unwrap().1, Val::Num(10)); 
+    assert_eq!(test1.unwrap().1, Val::ReturnNum(10)); 
 
     let test2 = interp_ast(parse_expr(Span::new(
         " 
@@ -357,8 +357,8 @@ fn test_interp_func_borrow_mut() {
         let mut a: i32 = 0;
         let mut b:  &mut i32 = &mut a;
         test(&mut b);
-        a
+        return a;
         }
         ")).unwrap().1);
-    assert_eq!(test2.unwrap().1, Val::Num(10)); 
+    assert_eq!(test2.unwrap().1, Val::ReturnNum(10)); 
 }

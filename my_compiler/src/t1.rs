@@ -1,5 +1,4 @@
 
-
 fn tio(i: i32) -> i32 {
     if (i < 50) {
         return tio(i + 1);
@@ -12,5 +11,4 @@ fn tio(i: i32) -> i32 {
 fn main() {
     let mut a: i32 = 0; 
     tio(a);
-    return &1;
 }

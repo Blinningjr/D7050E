@@ -43,18 +43,18 @@ fn main() {
 
     let parsed = parse(&contents).unwrap();
     
-    if typecheck {
-        if typecheck_ast(parsed.1.clone()) {
-            return;
-        }
+    // if typecheck {
+    //     if typecheck_ast(parsed.1.clone()) {
+    //         return;
+    //     }
         
-    }
+    // }
 
-    if borrowcheck {
-        if borrowcheck_ast(parsed.1.clone()) {
-            return;
-        }
-    }
+    // if borrowcheck {
+    //     if borrowcheck_ast(parsed.1.clone()) {
+    //         return;
+    //     }
+    // }
     let result = interp_ast(parsed.1).unwrap().1;
     match result {
         Val::ReturnBool(b) => println!("{:?}", b),
