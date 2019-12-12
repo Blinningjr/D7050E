@@ -42,19 +42,17 @@ fn main() {
         .expect("Something went wrong reading the file");
 
     let parsed = parse(&contents).unwrap();
+    if (parsed.0).fragment != "" {
+        println!("Could not parse file: \n {:#?}", parsed.0);
+    }
     
-    // if typecheck {
-    //     if typecheck_ast(parsed.1.clone()) {
-    //         return;
-    //     }
-        
-    // }
+    if typecheck {
+        let _tres = typecheck_ast(parsed.1.clone());
+    }
 
-    // if borrowcheck {
-    //     if borrowcheck_ast(parsed.1.clone()) {
-    //         return;
-    //     }
-    // }
+    if borrowcheck {
+        let _bres = borrowcheck_ast(parsed.1.clone());
+    }
     let result = interp_ast(parsed.1).unwrap().1;
     match result {
         Val::ReturnBool(b) => println!("{:?}", b),

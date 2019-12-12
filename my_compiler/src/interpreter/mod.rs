@@ -101,8 +101,8 @@ fn interp_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>, p: Prefix) -> Result<SpanV
     match (e.1).clone() {
         Expr::Var(s) => {
             match p {
-                Prefix::Borrow => Ok((e, Val::Ident(s.to_string(), -1))),
-                Prefix::BorrowMut => Ok((e, Val::Ident(s.to_string(), -1))),
+                Prefix::Borrow => Ok((e, Val::Ident(s.to_string(), env.get_var_scope(s, env.get_current_scope_pos())?))),
+                Prefix::BorrowMut => Ok((e, Val::Ident(s.to_string(),  env.get_var_scope(s, env.get_current_scope_pos())?))),
                 Prefix::DeRef(n) => {
                     let t = env.load_var(s, n);
                     if t.is_err() {

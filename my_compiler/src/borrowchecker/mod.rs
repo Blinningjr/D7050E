@@ -32,6 +32,7 @@ pub use errormessage::ErrorMessage;
 pub mod env;
 pub use env::Env;
 
+
 /** 
  *  Borrowcheckast.
 */
@@ -39,8 +40,12 @@ pub fn borrowcheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, BorrowI
     let mut env = Env::new();
     env.crate_scope();
     let res = borrowcheck_expr(e, &mut env);
-    env.print_errormessages();
-    return res;
+    if env.print_errormessages() {
+        panic!("");
+    } else {
+        return res;
+
+    }
 }
 
 

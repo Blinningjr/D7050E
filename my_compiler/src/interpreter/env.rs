@@ -176,14 +176,11 @@ impl<'a> Env<'a> {
             Err(_) =>  {
                 let mut value = val.clone();
                 match val.clone() {
-                    Val::Ident(i, _) => value = Val::Borrow(match self.get_var_pos(&i) {
+                    Val::Ident(i, s_pos) => value = Val::Borrow(match self.get_var_pos(&i, s_pos) {
                             Ok(ok) => ok, 
-                            Err(_) => panic!("store_var2 {:?} {:?}", key, val),
+                            Err(_) => panic!("store_var2 {:?} {:?} {:?}", key, val, i),
                         }, 
-                        match self.get_var_scope(&i) {
-                            Ok(ok) => ok, 
-                            Err(_) => panic!("store_var3 {:?} {:?}", key, val),
-                        }
+                        s_pos
                     ),
                     Val::BorrowPrimitive(_, v) => value = Val::BorrowPrimitive(self.scope_pos, v),
                     _ => (),
@@ -212,12 +209,12 @@ impl<'a> Env<'a> {
      */
     pub fn load_var(&mut self, key: &str, numderef: i32) -> Result<Val> {
         let mem_pos;
-        match self.get_var_pos(key.clone()) {
+        match self.get_var_pos(key.clone(), self.scope_pos) {
             Ok(p) => mem_pos = p,
             Err(e) => return Err(e),
         };
         let pos;
-        match self.get_var_scope(key.clone()) {
+        match self.get_var_scope(key.clone(), self.scope_pos) {
             Ok(p) => pos = p,
             Err(e) => return Err(e),
         };
@@ -296,12 +293,12 @@ impl<'a> Env<'a> {
      */
     pub fn assign_var(&mut self, key: &str, val: Val, numderef: i32) -> () {
         let mem_pos;
-        match self.get_var_pos(key.clone()) {
+        match self.get_var_pos(key.clone(), self.scope_pos) {
             Ok(p) => mem_pos = p,
             Err(_) => panic!("assign_var"),
         };
         let pos;
-        match self.get_var_scope(key.clone()) {
+        match self.get_var_scope(key.clone(), self.scope_pos) {
             Ok(p) => pos = p,
             Err(_) => panic!("assign_var"),
         };
@@ -343,9 +340,10 @@ impl<'a> Env<'a> {
      *  Gets the scope were a var is located.
      *  Looks for the var in current scope and it's return scopes.
      */
-    fn get_var_scope(&mut self, key: &str) -> Result<i32> {
-        let mut pos = self.scope_pos;
+    pub fn get_var_scope(&mut self, key: &str, p: i32) -> Result<i32> {
+        let mut pos = p;
         while pos >= 0 {
+            // println!("{:?}", pos);
             let res = self.scopes[pos as usize].load_v(key);
             match res {
                 Ok(_) => return Ok(pos),
@@ -358,12 +356,16 @@ impl<'a> Env<'a> {
      *  Gets the mem pos of were a var is located.
      *  Looks for the var in current scope and it's return scopes.
      */
-    fn get_var_pos(&mut self, key: &str) -> Result<usize> {
+    fn get_var_pos(&mut self, key: &str, s_pos: i32) -> Result<usize> {
         let s;
-        match self.get_var_scope(key) {
+        match self.get_var_scope(key, s_pos) {
             Ok(v) => s = v,
             Err(e) => return Err(e),
         };
         self.scopes[s as usize].get_pos(key)
+    }
+
+    pub fn get_current_scope_pos(& self) -> i32 {
+        return self.scope_pos;
     }
 }

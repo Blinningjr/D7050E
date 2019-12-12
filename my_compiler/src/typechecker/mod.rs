@@ -32,9 +32,11 @@ pub fn typecheck_ast<'a>(e: SpanExpr<'a>) -> IResult<'a, SpanExpr<'a>, MyType> {
     env.crate_scope();
     let res = typecheck_expr(e, &mut env);
     
-    env.print_errormessages();
-
-    return res;
+    if env.print_errormessages() {
+        panic!("");
+    } else {
+        return res;
+    }
 }
 
 
