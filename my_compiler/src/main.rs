@@ -43,7 +43,7 @@ fn main() {
 
     let parsed = parse(&contents).unwrap();
     if (parsed.0).fragment != "" {
-        println!("Could not parse file: \n {:#?}", parsed.0);
+        println!("Could not parse:  \n  {:#?} \n", parsed.0.fragment);
     }
     
     if typecheck {
