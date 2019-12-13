@@ -353,7 +353,7 @@ impl<'a> Env<'a> {
         return self.scopes[pos as usize].get_val(mem_pos);
     }
 
-    pub fn add_borrow(&mut self, pos: i32, mem_pos: usize) -> () {
+    pub fn add_borrow(&mut self, pos: i32, mem_pos: usize, e: SpanExpr<'a>, start: usize) -> () {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
@@ -366,11 +366,11 @@ impl<'a> Env<'a> {
                 val = BorrowInfo::Var(v, false, false);
             },
         };
-        self.check_borrow(val.clone());
+        self.check_borrow(val.clone(), e, start);
         self.scopes[pos as usize].update_val(mem_pos, val);
     }
 
-    pub fn add_borrowmut(&mut self, pos: i32, mem_pos: usize) -> () {
+    pub fn add_borrowmut(&mut self, pos: i32, mem_pos: usize, e: SpanExpr<'a>, start: usize) -> () {
         let old = self.get_value(pos, mem_pos);
         let mut val = match old {Ok(v) => v, Err(_) =>panic!("add_borrow"),};
         match val {
@@ -383,28 +383,32 @@ impl<'a> Env<'a> {
                 val = BorrowInfo::Var(v, false, false);
             },
         };
-        self.check_borrow(val.clone());
+        self.check_borrow(val.clone(), e, start);
         self.scopes[pos as usize].update_val(mem_pos, val);
     }
 
-    pub fn check_borrow(&mut self, val: BorrowInfo) -> () {
+    pub fn check_borrow(&mut self, val: BorrowInfo, e: SpanExpr<'a>, start: usize) -> () {
         match val {
             BorrowInfo::Value(v, _, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
-                        panic!("check_borrow");
+                        self.add_errormessage(ErrorMessage{message: "Borrowchecker error: Immutable and mutable borrow".to_string(), context: e.clone(), start: start,});
+                        // panic!("check_borrow");
                     }
                 } else if v.num_borrowmuts > 1 {
-                    panic!("check_borrow");
+                    self.add_errormessage(ErrorMessage{message: "Borrowchecker error: Multiple mutable borrows".to_string(), context: e.clone(), start: start,});
+                    // panic!("check_borrow");
                 }
             },
             BorrowInfo::Var(v, _, _) => {
                 if v.num_borrows > 0 {
                     if v.num_borrowmuts != 0 {
-                        panic!("check_borrow");
+                        self.add_errormessage(ErrorMessage{message: "Borrowchecker error: Immutable and mutable borrow".to_string(), context: e.clone(), start: start,});
+                        // panic!("check_borrow");
                     }
                 } else if v.num_borrowmuts > 1 {
-                    panic!("check_borrow");
+                    self.add_errormessage(ErrorMessage{message: "Borrowchecker error: Multiple mutable borrows".to_string(), context: e.clone(), start: start,});
+                    // panic!("check_borrow");
                 }
             },
         };

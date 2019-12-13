@@ -924,7 +924,8 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                         },
                         Prefix::Borrow => {
                             let pointer = env.store_var(val.clone());
-                            env.add_borrow(pointer.0, pointer.1);
+                            let start = (p.clone().0).offset;
+                            env.add_borrow(pointer.0, pointer.1, e.clone(), start);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
@@ -933,7 +934,8 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                         Prefix::BorrowMut => {
                             v.mutable = true;
                             let pointer = env.store_var(BorrowInfo::Value(v.clone(), false, false));
-                            env.add_borrowmut(pointer.0, pointer.1);
+                            let start = (p.clone().0).offset;
+                            env.add_borrowmut(pointer.0, pointer.1, e.clone(), start);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
@@ -961,7 +963,8 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                         },
                         Prefix::Borrow => {
                             let pointer = env.load_borowinfo(val.clone(), 0).unwrap().1;
-                            env.add_borrow(pointer.0, pointer.1);
+                            let start = (p.clone().0).offset;
+                            env.add_borrow(pointer.0, pointer.1, e.clone(), start);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
@@ -969,7 +972,8 @@ fn borrowcheck_prefixed<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, S
                         },
                         Prefix::BorrowMut => {
                             let pointer = env.load_borowinfo(val.clone(), 0).unwrap().1;
-                            env.add_borrowmut(pointer.0, pointer.1);
+                            let start = (p.clone().0).offset;
+                            env.add_borrowmut(pointer.0, pointer.1, e.clone(), start);
                             v.prefix = p.clone().1;
                             v.scope = pointer.0;
                             v.mem_pos = pointer.1;
