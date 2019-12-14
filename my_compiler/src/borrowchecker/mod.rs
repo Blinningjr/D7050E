@@ -446,7 +446,13 @@ fn borrowcheck_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> IResult<'a, Spa
             let p_val;
             match val.clone().1 {
                 BorrowInfo::Value(v, _, _) => p_val = v.prefix,
-                BorrowInfo::Var(v, _, _) => p_val = v.prefix, 
+                BorrowInfo::Var(v, _, _) => {
+                    p_val = v.prefix;
+                    if v.scope > scope {
+                        let start = ((*variable.clone()).0).offset; 
+                        env.add_errormessage(ErrorMessage{message: "Pointer will live longer then value".to_string(), context: e.clone(), start: start,});;
+                    }
+                }, 
             };
 
             if p_var != p_val {
