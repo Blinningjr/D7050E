@@ -9,6 +9,11 @@ use super::enverror::{EnvError, Result};
 use crate::parser::expr::Expr;
 use crate::parser::varprefix::Prefix;
 
+pub use super::ErrorMessage;
+use crate::parser::{Slice, FindSubstring};
+use core::ops::RangeTo;
+use core::ops::RangeFrom;
+
 
 /** 
  *  Defines Scope. 
@@ -367,5 +372,18 @@ impl<'a> Env<'a> {
 
     pub fn get_current_scope_pos(& self) -> i32 {
         return self.scope_pos;
+    }
+
+    pub fn error_panic(& self, em: ErrorMessage) {
+        let span = em.context.0;
+        let mut fragment = span.fragment;
+        fragment = fragment.slice(RangeFrom{start: em.start - span.offset});
+        let i = fragment.find_substring("\n").unwrap() + 1;
+        fragment = fragment.slice(RangeTo{end: i - 1});
+        panic!(
+            "Error: {:?} \n 
+            {:#?} \n
+            Line: {:?} \n", 
+            em.message, fragment, span.line);
     }
 }

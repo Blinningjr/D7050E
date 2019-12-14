@@ -1,5 +1,8 @@
-fn main() {
-    let mut a: i32 = 10;
-    let b: & i32 = &a;
-    let c: &mut i32 = &mut a;
+fn main() -> i32 {
+    let mut a: &i32 = &10;
+    if true {
+        let b: i32 = 2;
+        a = &b;
+    }
+    return *a;
 }

@@ -25,6 +25,10 @@ use crate::parser::varprefix::Prefix;
 
 pub type SpanVal<'a> = (SpanExpr<'a>, Val);
 
+#[path = "../typechecker/errormessage.rs"]
+pub mod errormessage;
+pub use errormessage::ErrorMessage;
+
 
 /** 
  *  Get i32 value from Val.
@@ -36,7 +40,7 @@ fn get_int<'a>(v: Val, env: &mut Env<'a>) -> Result<i32> {
             let val = env.get_var_value(&k, p)?;
             return get_int(val, env);
         },
-        _ => panic!("get_int"),
+        _ => panic!("Error: Value {:?} should be of type i32.", v),
     }
 }
 
@@ -51,7 +55,7 @@ fn get_bool<'a>(v: Val, env: &mut Env<'a>) -> Result<bool> {
             let val = env.get_var_value(&k, p)?;
             return get_bool(val, env);
         },
-        _ => panic!("get_bool"),
+        _ => panic!("Error: Value {:?} should be of type bool.", v),
     }
 }
 
@@ -106,14 +110,16 @@ fn interp_var<'a>(e: SpanExpr<'a>, env: &mut Env<'a>, p: Prefix) -> Result<SpanV
                 Prefix::DeRef(n) => {
                     let t = env.load_var(s, n);
                     if t.is_err() {
-                        panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
+                        let start = ((e.clone()).0).offset; 
+                        env.error_panic(ErrorMessage{message: "Invalid dereference".to_string(), context: e.clone(), start: start,});
                     }
                     return Ok((e, t?));
                 },
                 _ => {
                     let t = env.load_var(s, 0);
                     if t.is_err() {
-                        panic!("interp_expr / load_var: {:?} : {:#?}", s, env);
+                        let start = ((e.clone()).0).offset; 
+                        env.error_panic(ErrorMessage{message: "Var not in scope".to_string(), context: e.clone(), start: start,});
                     }
                     return Ok((e, t?));
                 },
@@ -135,17 +141,29 @@ fn interp_unop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     let res = interp_expr(*rv.clone(), env)?;
                     match res.1 {
                         Val::Num(i) => Ok((e, Val::Num(-i))),
-                        _ => panic!("interp_unop"),
+                        _ => {
+                            let start = ((op.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "Unop Sub only works with type i32".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     }
                 }
                 Op::Not => {
                     let res = interp_expr(*rv.clone(), env)?;
                     match res.1 {
                         Val::Bool(b) => Ok((e, Val::Bool(!b))),
-                        _ => panic!("interp_unop"),
+                        _ => {
+                            let start = ((op.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "Unop Not only works with ype bool".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     }
                 }
-                _ => panic!("interp_unop"),
+                _ => {
+                    let start = ((e.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Unop not supported".to_string(), context: e.clone(), start: start,});
+                    panic!("");
+                },
             }
         },
         _ => panic!("interp_unop"),
@@ -207,11 +225,15 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     >
                     get_int(rr, env)?
                 ))),
-                Op::Equal => Ok((e, Val::Bool(
+                Op::Equal => Ok((e.clone(), Val::Bool(
                     match lr {
                         Val::Bool(b) => b == get_bool(rr, env)?,
                         Val::Num(v) => v == get_int(rr, env)?,
-                        _ => panic!("interp_binop"),
+                        _ => {
+                            let start = ((op.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "The type is not supported by binop Equal".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     }
                 ))),
                 Op::And => Ok((e, Val::Bool(
@@ -224,14 +246,22 @@ fn interp_binop<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     ||
                     get_bool(rr, env)?
                 ))),
-                Op::NotEq => Ok((e, Val::Bool(
+                Op::NotEq => Ok((e.clone(), Val::Bool(
                     match lr {
                         Val::Bool(b) => b != get_bool(rr, env)?,
                         Val::Num(v) => v != get_int(rr, env)?,
-                        _ => panic!("interp_binop"),
+                        _ => {
+                            let start = ((op.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "The type is not supported by binop NotEq".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     }
                 ))),
-                _ => panic!("interp_binop"),
+                _ => {
+                    let start = ((op.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Op is not supported".to_string(), context: e.clone(), start: start,});
+                    panic!("");
+                },
             }
         },
         _ => panic!("interp_binop"),
@@ -253,25 +283,45 @@ fn interp_let<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
                     match p.1 {
                         Prefix::Mut => prefix = Prefix::Mut,
                         Prefix::None => (),
-                        _ => panic!("interp_let"),
+                        _ => {
+                            let start = ((e.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "That prefix is not allowed after let".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     };
                     match (*v).1 {
                         Expr::VarWithType(var, _) => { 
                             match (*var).1 {
                                 Expr::Var(i) => ident = i,
-                                _ => panic!("interp_let"),
+                                _ => {
+                                    let start = ((e.clone()).0).offset; 
+                                    env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: e.clone(), start: start,});
+                                    panic!("");
+                                },
                             };
                         },
-                        _ => panic!("interp_let"),
+                        _ => {
+                            let start = ((e.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "Expected var with type".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     };
                 },
                 Expr::VarWithType(v, _) => { 
                     match (*v).1 {
                         Expr::Var(i) => ident = i,
-                        _ => panic!("interp_let"),
+                        _ => {
+                            let start = ((e.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: e.clone(), start: start,});
+                            panic!("");
+                        },
                     };
                 },
-                _ => panic!("interp_let"),
+                _ => {
+                    let start = ((e.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "can't find var".to_string(), context: e.clone(), start: start,});
+                    panic!("");
+                },
             };
             env.store_var(ident, (val.1).clone(), prefix);
             return Ok(val);
@@ -297,13 +347,19 @@ fn interp_assign<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> 
                                 _ => env.assign_var(i, (val.1).clone(), 0),
                             };
                         },
-                        _ => panic!("interp_assign"),
+                        _ => {
+                            let start = ((e.clone()).0).offset; 
+                            env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: e.clone(), start: start,});
+                        },
                     };
                 },
                 Expr::Var(i) => {
                     env.assign_var(i, (val.1).clone(), 0);
                 },
-                _ => panic!("interp_assign"),
+                _ => {
+                    let start = ((e.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: e.clone(), start: start,});
+                },
             };
             return Ok(val);
         },
@@ -323,12 +379,20 @@ fn interp_if<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             if get_bool(interp_expr(*b, env)?.1, env)? {
                 match ib.1.clone() {
                     Expr::Body(_) => res = interp_body(*ib, env),
-                    _ => panic!("interp_if"),
+                    _ => {
+                        let start = ((ib.clone()).0).offset; 
+                        env.error_panic(ErrorMessage{message: "Expected body".to_string(), context: e.clone(), start: start,});
+                        panic!("");
+                    },
                 }
             } else {
                 match eb.1.clone() {
                     Expr::Body(_) => res = interp_body(*eb, env),
-                    _ => panic!("interp_if"),
+                    _ => {
+                        let start = ((eb.clone()).0).offset; 
+                        env.error_panic(ErrorMessage{message: "Expected body".to_string(), context: e.clone(), start: start,});
+                        panic!("");
+                    },
                 }
             }
             env.pop_scope();
@@ -405,7 +469,14 @@ fn interp_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a
             for val in p {
                 v.push(interp_expr(val, env)?.1);
             }
-            let expr = env.load_func(match (*i).1 {Expr::Var(ident) => ident, _ => panic!("interp_func_call"),})?;
+            let expr = env.load_func(match (*i).1 {
+                Expr::Var(ident) => ident, 
+                _ => {
+                    let start = ((i.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: e.clone(), start: start,});
+                    panic!("");
+                },
+            })?;
             match expr {
                 Expr::Func(_, _, _, _) => {
                     let res = interp_func(expr, v, env)?;
@@ -416,7 +487,11 @@ fn interp_func_call<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a
                         _ => Ok(res),
                     }
                 },
-                _ => panic!("interp_func_call"),
+                _ => {
+                    let start = ((e.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Can't load function".to_string(), context: e.clone(), start: start,});
+                    panic!("");
+                },
             }
         },
         _ => panic!("interp_func_call"),
@@ -433,23 +508,59 @@ fn interp_func<'a>(e: Expr<'a>, pv: Vec<Val>, env: &mut Env<'a>) -> Result<SpanV
             env.crate_scope();
             let mut j = 0;
             for p_var in p.clone() { 
-                match p_var.1 {
-                    Expr::VarWithType(i, _type) => {env.store_var( match (*i).1 { Expr::Var(ident) => ident, _ => panic!("interp_func"),}, pv[j].clone(), Prefix::None); ()},
+                match p_var.clone().1 {
+                    Expr::VarWithType(i, _type) => {
+                        env.store_var( match (*i).1 { 
+                            Expr::Var(ident) => ident, 
+                            _ => {
+                                let start = ((i.clone()).0).offset; 
+                                env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: *i.clone(), start: start,});
+                                panic!("");
+                            },
+                        }, 
+                        pv[j].clone(), 
+                        Prefix::None); 
+                        ()
+                    },
                     Expr::Prefixed(p, var) => {
                         match (*var).1 {
-                            Expr::VarWithType(i, _type) => {env.store_var( match (*i).1 { Expr::Var(ident) => ident, _ => panic!("interp_func"),}, pv[j].clone(), Prefix::None); ()},
+                            Expr::VarWithType(i, _type) => {
+                                env.store_var( match (*i).1 { 
+                                    Expr::Var(ident) => ident, 
+                                    _ => {
+                                        let start = ((i.clone()).0).offset; 
+                                        env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: *i.clone(), start: start,});
+                                        panic!("");
+                                    },
+                                }, 
+                                pv[j].clone(), 
+                                Prefix::None); 
+                                ()
+                            },
                             Expr::Var(ident) => {env.store_var(ident, pv[j].clone(), p.1); ()},
-                            _ => panic!("interp_func"),
+                            _ => {
+                                let start = ((var.clone()).0).offset; 
+                                env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: p_var.clone(), start: start,});
+                                panic!("");
+                            },
                         };
                     },
-                    _ => panic!("interp_func"),
+                    _ => {
+                        let start = ((p_var.clone()).0).offset; 
+                        env.error_panic(ErrorMessage{message: "Expected var with type".to_string(), context: p_var.clone(), start: start,});
+                        panic!("");
+                    },
                 };
                 j += 1;
             }
             let res;
             match b.1.clone() {
                 Expr::Body(_) => res = interp_body(*b, env),
-                _ => panic!("interp_func"),
+                _ => {
+                    let start = ((b.clone()).0).offset; 
+                    env.error_panic(ErrorMessage{message: "Expected body".to_string(), context: *b.clone(), start: start,});
+                    panic!("");
+                },
             }
             env.pop_scope();
             return res;
@@ -467,7 +578,18 @@ fn interp_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
         Expr::Funcs(funcs) => {
             for func in funcs {
                 match (func.1).clone() {
-                    Expr::Func(v, _, _, _) => {env.store_func(match (*v).1 {Expr::Var(i) => i, _ => panic!("interp_func"),}, func.1); ()},
+                    Expr::Func(v, _, _, _) => {
+                        env.store_func(match (*v).1 {
+                            Expr::Var(i) => i, 
+                            _ => {
+                                let start = ((v.clone()).0).offset; 
+                                env.error_panic(ErrorMessage{message: "Expected var".to_string(), context: *v.clone(), start: start,});
+                                panic!("");
+                            },
+                        }, 
+                        func.1); 
+                        ()
+                    },
                     _ => (),
                 };
             }
@@ -475,7 +597,9 @@ fn interp_funcs<'a>(e: SpanExpr<'a>, env: &mut Env<'a>) -> Result<SpanVal<'a>> {
             let expr = env.load_func(&"main")?;
             match expr.clone() {
                 Expr::Func(_, _, _, _) => interp_func(expr, Vec::new(), env),
-                _ =>  panic!("interp_funcs"),
+                _ =>  {
+                    panic!("could not load function main");
+                },
             }
         },
         _ => panic!("interp_funcs"),
