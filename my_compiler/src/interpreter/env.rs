@@ -74,7 +74,7 @@ impl<'a> Scope<'a> {
                 match (*v).clone() {
                     Val::Bool(_) => (),
                     Val::Num(_) => (),
-                    _ => panic!("store_v"),
+                    _ => panic!("Error: Borrowed value must be a non pointer"),
                 };
                 self.mem.push((Prefix::None, (*v).clone()));
                 self.mem.push((prefix, Val::Borrow(self.mem.len() - 1, pos)));
@@ -177,13 +177,13 @@ impl<'a> Env<'a> {
     pub fn store_var(&mut self, key: &'a str, val: Val, prefix: Prefix) -> Option<usize> {
         let res = self.load_var(key, 0);
         match res {
-            Ok(_) => panic!("store_var1 {:?} {:?}", key, val),
+            Ok(_) => panic!("Error: Var {:?} already exists in scope", key),
             Err(_) =>  {
                 let mut value = val.clone();
                 match val.clone() {
                     Val::Ident(i, s_pos) => value = Val::Borrow(match self.get_var_pos(&i, s_pos) {
                             Ok(ok) => ok, 
-                            Err(_) => panic!("store_var2 {:?} {:?} {:?}", key, val, i),
+                            Err(_) => panic!("Error: Could not find var {:?} in scope", key),
                         }, 
                         s_pos
                     ),
@@ -203,7 +203,7 @@ impl<'a> Env<'a> {
     pub fn store_func(&mut self, key: &'a str, func: Expr<'a>) -> Option<Expr<'a>> {
         let res = self.load_func(key);
         match res {
-            Ok(_) => panic!("store_func"),
+            Ok(_) => panic!("Error: There is already a function named {:?} in scope", key),
             Err(_) => self.scopes[self.scope_pos as usize].store_f(key, func),
         }
     }
@@ -237,7 +237,7 @@ impl<'a> Env<'a> {
                     if numderef > 0 {
                         match tup.1 {
                             Val::Borrow(k, p) => return self.help_load_var(k, numderef -1, p),
-                            _ => panic!("help_load_var"),
+                            _ => panic!("Error: Can't dereference non pointer"),
                         };
                     }
                     return Ok(tup.1);
@@ -300,12 +300,12 @@ impl<'a> Env<'a> {
         let mem_pos;
         match self.get_var_pos(key.clone(), self.scope_pos) {
             Ok(p) => mem_pos = p,
-            Err(_) => panic!("assign_var"),
+            Err(_) => panic!("Error: Could not find var {:?} in scope", key),
         };
         let pos;
         match self.get_var_scope(key.clone(), self.scope_pos) {
             Ok(p) => pos = p,
-            Err(_) => panic!("assign_var"),
+            Err(_) => panic!("Error: Could not find var {:?} in scope", key),
         };
         self.help_assign_var(mem_pos, pos, val, numderef)
     }
@@ -323,12 +323,12 @@ impl<'a> Env<'a> {
                             Val::Borrow(mp, p) => {
                                 return self.help_assign_var(mp, p, val, numderef -1);
                             },
-                            _ => panic!("help_assign_var"),
+                            _ => panic!("Error: Can't dereference non pointer"),
                         };
                     } else {
                         match tup.0 {
                             Prefix::Mut => return self.scopes[pos as usize].update_val(mem_pos, val, tup.0),
-                            _ => panic!("Can't help_assign_var none mut var"),
+                            _ => panic!("Error: Can't assign value to none mutable"),
                         }
                     }
                 },
@@ -338,7 +338,7 @@ impl<'a> Env<'a> {
                 },
             }
         }
-        panic!("help_assign_var");
+        panic!("Error: Could not find stored value");
     }
 
     /**
